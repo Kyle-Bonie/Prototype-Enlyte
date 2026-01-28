@@ -4,3 +4,14 @@
   color: #111827;
   display: flex;
 }
+
+.sidebar {
+  position: fixed;
+  top: 35px;
+  left: 0;
+  width: 230px;
+  height: calc(100% - 60px);
+  background-color: #131b30;
+  padding-top: 20px;
+  z-index: 1000;
+}

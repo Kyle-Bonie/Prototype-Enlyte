@@ -1,0 +1,40 @@
+.dashboard {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 16px;
+}
+
+.dashboard-card {
+  width: 100%;
+  max-width: 720px;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 48px;
+  box-shadow: 0 18px 35px rgba(15, 23, 42, 0.12);
+  text-align: center;
+}
+
+.dashboard-title {
+  margin: 0 0 12px;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1e3a8a;
+}
+
+.dashboard-subtitle {
+  margin: 0 0 24px;
+  color: #475569;
+}
+
+.dashboard-button {
+  background: #1e3a8a;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 18px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}

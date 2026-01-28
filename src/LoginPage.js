@@ -1,6 +1,32 @@
-import './LoginPage.css';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import "./LoginPage.css";
 
-function LoginPage() {
+function LoginPage({ onLoginSuccess }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    if (username === "teamLead" && password === "we") {
+      onLoginSuccess({ username, role: "teamLead" });
+      setError("");
+      navigate("/team-lead");
+      return;
+    }
+
+    if (username === "agent" && password === "we") {
+      onLoginSuccess({ username, role: "agent" });
+      setError("");
+      navigate("/agent");
+      return;
+    }
+
+    setError("Invalid username or password.");
+  };
+
   return (
     <main className="login-page">
       <section className="login-card">
@@ -10,12 +36,14 @@ function LoginPage() {
             <span className="login-brand-text">Enlyte Logo</span>
           </div>
           <h2 className="login-welcome-title">Welcome</h2>
-          <p className="login-welcome-text">Please log in with your authorized credentials.</p>
+          <p className="login-welcome-text">
+            Please log in with your authorized credentials.
+          </p>
         </div>
 
         <div className="login-panel login-panel--form">
           <h1 className="login-title">Login to Your Account</h1>
-          <form className="login-form">
+          <form className="login-form" onSubmit={handleSubmit}>
             <label className="login-label" htmlFor="username">
               Username
             </label>
@@ -27,6 +55,8 @@ function LoginPage() {
               placeholder="Enter your username"
               autoComplete="username"
               required
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
             />
 
             <label className="login-label" htmlFor="password">
@@ -40,7 +70,11 @@ function LoginPage() {
               placeholder="Enter your password"
               autoComplete="current-password"
               required
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
             />
+
+            {error ? <p className="login-error">{error}</p> : null}
 
             <button className="login-button" type="submit">
               Login
