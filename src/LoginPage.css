@@ -1,6 +1,6 @@
 .login-page {
   width: 100%;
-  background: linear-gradient(135deg, #050f2a 0%, #081b44 55%, #0b2c66 100%);
+  background: linear-gradient(to bottom, #050f2a 0%, #081b44 55%, #0b2c66 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -27,7 +27,7 @@
 }
 
 .login-panel--welcome {
-  background: linear-gradient(135deg, #5b2fe0 0%, #d818d3 100%);
+  background: linear-gradient(to bottom, #5b2fe0 0%, #d818d3 200%);
   color: #ffffff;
   text-align: center;
   gap: 18px;
@@ -47,11 +47,9 @@
 }
 
 .login-logo {
-  width: 120px;
+  width: 270px;
   height: auto;
-  max-height: 48px;
   object-fit: contain;
-  background: rgba(255, 255, 255, 0.9);
   padding: 6px 10px;
   border-radius: 8px;
 }

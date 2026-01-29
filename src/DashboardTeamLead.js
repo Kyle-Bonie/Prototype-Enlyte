@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ApricusLogo from "./assets/ApricusLogo.png";
 import "./DashboardTeamLead.css";
 
 function DashboardTeamLead({ username, onLogout }) {
@@ -123,7 +124,9 @@ function DashboardTeamLead({ username, onLogout }) {
   return (
     <div className="tl-dashboard">
       {/* Fixed header bar */}
-      <header className="tl-topbar" />
+      <header className="tl-topbar">
+        <img className="tl-topbar-logo" src={ApricusLogo} alt="Apricus" />
+      </header>
       <div className="tl-body">
         {/* Sidebar navigation + logout */}
         <aside className="tl-sidebar sidebar">
