@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./LoginPage.css";
+import apricusLogo from "./assets/ApricusLogo.png";
 
 function LoginPage({ onLoginSuccess }) {
   const [username, setUsername] = useState("");
@@ -32,8 +33,7 @@ function LoginPage({ onLoginSuccess }) {
       <section className="login-card">
         <div className="login-panel login-panel--welcome">
           <div className="login-brand">
-            <div className="login-logo" aria-hidden="true" />
-            <span className="login-brand-text">Enlyte Logo</span>
+            <img className="login-logo" src={apricusLogo} alt="Apricus logo" />
           </div>
           <h2 className="login-welcome-title">Welcome</h2>
           <p className="login-welcome-text">

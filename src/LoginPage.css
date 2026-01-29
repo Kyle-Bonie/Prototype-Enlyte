@@ -47,10 +47,13 @@
 }
 
 .login-logo {
-  width: 22px;
-  height: 22px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.7);
+  width: 120px;
+  height: auto;
+  max-height: 48px;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 6px 10px;
+  border-radius: 8px;
 }
 
 .login-brand-text {

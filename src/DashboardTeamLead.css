@@ -9,11 +9,14 @@
 .tl-topbar {
   height: 56px;
   width: 100%;
-  background: linear-gradient(135deg, #5b2fe0 0%, #d818d3 100%);
+  background: linear-gradient(135deg, #5b2fe0 0%, #d818d3 270%);
   position: fixed;
   top: 0;
   left: 0;
   z-index: 1001;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
 }
 
 .tl-body {
@@ -32,6 +35,52 @@
   flex-direction: column;
   padding: 16px;
   align-self: stretch;
+}
+
+.tl-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 30px;
+}
+
+.tl-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: #e2e8f0;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.tl-nav-item:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.tl-nav-item.active {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.tl-nav-icon {
+  font-size: 16px;
+  width: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #60a5fa;
+}
+
+.tl-nav-text {
+  letter-spacing: 0.2px;
 }
 
 .tl-sidebar-spacer {
@@ -53,7 +102,7 @@
 
 .tl-main {
   background: #ffffff;
-  padding: 24px 32px;
+  padding: 24px 48px 24px 32px;
   min-height: calc(100vh - 56px);
   height: 100%;
 }
@@ -64,6 +113,343 @@
   background: #f7f7fb;
   border-radius: 8px;
   padding: 24px;
+}
+
+.tl-tiles {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.tl-tile {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tl-tile-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tl-tile-title {
+  margin: 0;
+  font-size: 16px;
+  color: #1e3a8a;
+}
+
+.tl-tile-subtitle {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.tl-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 80px;
+}
+
+.tl-chart-bar {
+  flex: 1;
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(180deg, #60a5fa 0%, #2563eb 100%);
+  height: 40%;
+}
+
+.tl-chart-bar:nth-child(2) {
+  height: 65%;
+}
+
+.tl-chart-bar:nth-child(3) {
+  height: 50%;
+}
+
+.tl-chart-bar:nth-child(4) {
+  height: 80%;
+}
+
+.tl-upload-button {
+  margin-top: 16px;
+  background: #1e3a8a;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tl-table-tile {
+  margin-top: 18px;
+}
+
+.tl-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.tl-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 860px;
+  font-size: 12px;
+  color: #1f2937;
+}
+
+.tl-table thead {
+  background: #eef2ff;
+}
+
+.tl-table th,
+.tl-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tl-table th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #334155;
+}
+
+.tl-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.tl-table tfoot {
+  background: #f1f5f9;
+  font-weight: 700;
+}
+
+.tl-table tfoot td {
+  border-top: 1px solid #e2e8f0;
+}
+
+.tl-table--summary th,
+.tl-table--summary td {
+  text-align: center;
+}
+
+.tl-table--summary th:first-child,
+.tl-table--summary td:first-child {
+  text-align: left;
+}
+
+.tl-table--manage {
+  min-width: 520px;
+}
+
+.tl-manage-tile {
+  margin-top: 20px;
+}
+
+.tl-user-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tl-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.tl-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.tl-form-label {
+  font-weight: 600;
+}
+
+.tl-form-input {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #1f2937;
+  background: #ffffff;
+}
+
+.tl-form-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.tl-primary {
+  background: #1e3a8a;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tl-secondary {
+  background: #e2e8f0;
+  color: #1e293b;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tl-action-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.tl-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2563eb;
+  cursor: pointer;
+}
+
+.tl-link--danger {
+  color: #dc2626;
+}
+
+.tl-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.tl-pill--active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.tl-pill--inactive {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.tl-status {
+  font-weight: 700;
+}
+
+.tl-status--met {
+  color: #0f766e;
+}
+
+.tl-status--missed {
+  color: #dc2626;
+}
+
+.tl-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.tl-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.tl-modal-card {
+  position: relative;
+  width: 360px;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.25);
+  z-index: 1;
+}
+
+.tl-modal-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  cursor: pointer;
+  color: #475569;
+}
+
+.tl-upload-box {
+  border: 1px dashed #cbd5f5;
+  border-radius: 10px;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.tl-upload-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 1px solid #dbe3f8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #3b82f6;
+  font-size: 18px;
+}
+
+.tl-upload-text {
+  margin: 0;
+  color: #475569;
+  font-size: 13px;
+}
+
+.tl-upload-error {
+  margin: 0;
+  color: #dc2626;
+  font-size: 12px;
+}
+
+.tl-upload-choose {
+  background: #1e3a8a;
+  color: #fff;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tl-upload-input {
+  display: none;
 }
 
 .tl-title {
