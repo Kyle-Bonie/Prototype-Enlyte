@@ -146,6 +146,29 @@
   gap: 4px;
 }
 
+.tl-table-tile .tl-tile-header {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tl-assign-button {
+  background: #1e3a8a;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tl-assign-button:disabled {
+  background: #cbd5f5;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
 .tl-tile-title {
   margin: 0;
   font-size: 16px;
@@ -444,6 +467,51 @@
   margin: 0;
   color: #dc2626;
   font-size: 12px;
+}
+
+.tl-assign-box {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tl-assign-title {
+  margin: 0;
+  font-size: 18px;
+  color: #1e3a8a;
+}
+
+.tl-assign-text {
+  margin: 0;
+  font-size: 13px;
+  color: #475569;
+}
+
+.tl-assign-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tl-assign-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.tl-assign-select {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #1f2937;
+  background: #ffffff;
+}
+
+.tl-assign-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
 }
 
 .tl-upload-choose {

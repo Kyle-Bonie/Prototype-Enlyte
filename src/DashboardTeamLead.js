@@ -23,6 +23,11 @@ function DashboardTeamLead({ username, onLogout }) {
   });
   // Manage User edit state.
   const [editingUserId, setEditingUserId] = useState(null);
+  // Case selection state for Assign Case button.
+  const [selectedCases, setSelectedCases] = useState({});
+  // Assign Case modal state.
+  const [isAssignOpen, setIsAssignOpen] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState("");
 
   // Sidebar navigation handler.
   const handleSelectView = (view) => {
@@ -121,6 +126,33 @@ function DashboardTeamLead({ username, onLogout }) {
     setUserForm({ name: "", role: "Agent", status: "Active" });
   };
 
+  const handleCaseToggle = (caseId) => {
+    setSelectedCases((prev) => ({
+      ...prev,
+      [caseId]: !prev[caseId],
+    }));
+  };
+
+  const hasSelectedCases = Object.values(selectedCases).some(Boolean);
+  const availableAgents = users.filter((user) => user.role === "Agent");
+
+  const handleOpenAssign = () => {
+    setIsAssignOpen(true);
+  };
+
+  const handleCloseAssign = () => {
+    setIsAssignOpen(false);
+    setSelectedAgent("");
+  };
+
+  const handleAssignConfirm = () => {
+    if (!selectedAgent) {
+      return;
+    }
+    alert("Case/s is successfully assigned.");
+    handleCloseAssign();
+  };
+
   return (
     <div className="tl-dashboard">
       {/* Fixed header bar */}
@@ -179,9 +211,6 @@ function DashboardTeamLead({ username, onLogout }) {
                   <section className="tl-tile">
                     <div className="tl-tile-header">
                       <h2 className="tl-tile-title">Upload Excel</h2>
-                      <p className="tl-tile-subtitle">
-                        Upload a .xls or .xlsx file
-                      </p>
                     </div>
                     <button
                       className="tl-upload-button"
@@ -196,9 +225,6 @@ function DashboardTeamLead({ username, onLogout }) {
                   <section className="tl-tile">
                     <div className="tl-tile-header">
                       <h2 className="tl-tile-title">Chart Preview</h2>
-                      <p className="tl-tile-subtitle">
-                        Visualization placeholder
-                      </p>
                     </div>
                     <div className="tl-chart">
                       <div className="tl-chart-bar" />
@@ -212,9 +238,6 @@ function DashboardTeamLead({ username, onLogout }) {
                 <section className="tl-tile tl-table-tile">
                   <div className="tl-tile-header">
                     <h2 className="tl-tile-title">Agent Summary Table</h2>
-                    <p className="tl-tile-subtitle">
-                      Workload snapshot by agent
-                    </p>
                   </div>
                   <div className="tl-table-wrap">
                     <table className="tl-table tl-table--summary">
@@ -266,14 +289,20 @@ function DashboardTeamLead({ username, onLogout }) {
                 <section className="tl-tile tl-table-tile">
                   <div className="tl-tile-header">
                     <h2 className="tl-tile-title">Case Table</h2>
-                    <p className="tl-tile-subtitle">
-                      Sample data for visualization
-                    </p>
+                    <button
+                      className="tl-assign-button"
+                      type="button"
+                      disabled={!hasSelectedCases}
+                      onClick={handleOpenAssign}
+                    >
+                      Assign Case
+                    </button>
                   </div>
                   <div className="tl-table-wrap">
                     <table className="tl-table">
                       <thead>
                         <tr>
+                          <th aria-label="Select" />
                           <th>Date</th>
                           <th>Case Number</th>
                           <th>Agent</th>
@@ -287,22 +316,24 @@ function DashboardTeamLead({ username, onLogout }) {
                       </thead>
                       <tbody>
                         <tr>
+                          <td />
                           <td>01/28/2026</td>
                           <td>CS-1042</td>
                           <td>A. Cruz</td>
                           <td>09:00</td>
-                          <td>High</td>
+                          <td>Urgent</td>
                           <td>13:00</td>
                           <td>12:20</td>
                           <td>12:30</td>
                           <td className="tl-status tl-status--met">Met</td>
                         </tr>
                         <tr>
+                          <td />
                           <td>01/28/2026</td>
                           <td>CS-1043</td>
                           <td>J. Lim</td>
                           <td>09:00</td>
-                          <td>Medium</td>
+                          <td>Standard</td>
                           <td>15:00</td>
                           <td>15:30</td>
                           <td>15:45</td>
@@ -311,15 +342,58 @@ function DashboardTeamLead({ username, onLogout }) {
                           </td>
                         </tr>
                         <tr>
+                          <td />
                           <td>01/28/2026</td>
                           <td>CS-1044</td>
                           <td>S. Tan</td>
                           <td>09:00</td>
-                          <td>Low</td>
+                          <td>Standard</td>
                           <td>16:00</td>
                           <td>14:10</td>
                           <td>14:20</td>
                           <td className="tl-status tl-status--met">Met</td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <input
+                              type="checkbox"
+                              aria-label="Select case CS-1045"
+                              checked={!!selectedCases["CS-1045"]}
+                              onChange={() => handleCaseToggle("CS-1045")}
+                            />
+                          </td>
+                          <td>01/28/2026</td>
+                          <td>CS-1045</td>
+                          <td />
+                          <td />
+                          <td>Standard</td>
+                          <td>17:00</td>
+                          <td />
+                          <td />
+                          <td className="tl-status tl-status--missed">
+                            Not Met
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <input
+                              type="checkbox"
+                              aria-label="Select case CS-1046"
+                              checked={!!selectedCases["CS-1046"]}
+                              onChange={() => handleCaseToggle("CS-1046")}
+                            />
+                          </td>
+                          <td>01/28/2026</td>
+                          <td>CS-1046</td>
+                          <td />
+                          <td />
+                          <td>Urgent</td>
+                          <td>18:00</td>
+                          <td />
+                          <td />
+                          <td className="tl-status tl-status--missed">
+                            Not Met
+                          </td>
                         </tr>
                       </tbody>
                     </table>
@@ -333,9 +407,6 @@ function DashboardTeamLead({ username, onLogout }) {
                   <section className="tl-tile">
                     <div className="tl-tile-header">
                       <h2 className="tl-tile-title">Chart Preview</h2>
-                      <p className="tl-tile-subtitle">
-                        Visualization placeholder
-                      </p>
                     </div>
                     <div className="tl-chart">
                       <div className="tl-chart-bar" />
@@ -349,9 +420,6 @@ function DashboardTeamLead({ username, onLogout }) {
                 <section className="tl-tile tl-table-tile">
                   <div className="tl-tile-header">
                     <h2 className="tl-tile-title">Agent Summary Table</h2>
-                    <p className="tl-tile-subtitle">
-                      Workload snapshot by agent
-                    </p>
                   </div>
                   <div className="tl-table-wrap">
                     <table className="tl-table tl-table--summary">
@@ -406,9 +474,6 @@ function DashboardTeamLead({ username, onLogout }) {
                 <section className="tl-tile tl-manage-tile">
                   <div className="tl-tile-header">
                     <h2 className="tl-tile-title">Manage User</h2>
-                    <p className="tl-tile-subtitle">
-                      Create, update, and remove team members
-                    </p>
                   </div>
                   <form className="tl-user-form" onSubmit={handleSaveUser}>
                     <div className="tl-form-grid">
@@ -467,9 +532,6 @@ function DashboardTeamLead({ username, onLogout }) {
                 <section className="tl-tile tl-table-tile">
                   <div className="tl-tile-header">
                     <h2 className="tl-tile-title">User List</h2>
-                    <p className="tl-tile-subtitle">
-                      Team lead can edit or delete users
-                    </p>
                   </div>
                   <div className="tl-table-wrap">
                     <table className="tl-table tl-table--manage">
@@ -563,6 +625,59 @@ function DashboardTeamLead({ username, onLogout }) {
               {uploadError ? (
                 <p className="tl-upload-error">{uploadError}</p>
               ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {isAssignOpen ? (
+        <div className="tl-modal" role="dialog" aria-modal="true">
+          <div className="tl-modal-backdrop" onClick={handleCloseAssign} />
+          <div className="tl-modal-card">
+            <button
+              className="tl-modal-close"
+              type="button"
+              onClick={handleCloseAssign}
+              aria-label="Close"
+            >
+              ×
+            </button>
+            <div className="tl-assign-box">
+              <h3 className="tl-assign-title">Assign Selected Cases</h3>
+              <p className="tl-assign-text">Select one agent to assign.</p>
+              <label className="tl-assign-field">
+                <span className="tl-assign-label">Agent</span>
+                <select
+                  className="tl-assign-select"
+                  value={selectedAgent}
+                  onChange={(event) => setSelectedAgent(event.target.value)}
+                >
+                  <option value="" disabled>
+                    Select an agent
+                  </option>
+                  {availableAgents.map((agent) => (
+                    <option key={agent.id} value={agent.name}>
+                      {agent.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="tl-assign-actions">
+                <button
+                  className="tl-primary"
+                  type="button"
+                  disabled={!selectedAgent}
+                  onClick={handleAssignConfirm}
+                >
+                  Okay
+                </button>
+                <button
+                  className="tl-secondary"
+                  type="button"
+                  onClick={handleCloseAssign}
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>

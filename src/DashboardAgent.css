@@ -1,40 +1,52 @@
-.dashboard {
+.agent-dashboard {
   width: 100%;
+  min-height: 100vh;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 16px;
+  flex-direction: column;
+  background: #f4f6fb;
 }
 
-.dashboard-card {
-  width: 100%;
-  max-width: 720px;
+.agent-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  min-height: calc(100vh - 56px);
+  align-items: stretch;
+  height: 100%;
+  padding-top: 56px;
+  padding-left: 230px;
+}
+
+.agent-main {
   background: #ffffff;
-  border-radius: 14px;
-  padding: 48px;
-  box-shadow: 0 18px 35px rgba(15, 23, 42, 0.12);
-  text-align: center;
+  padding: 24px 48px 24px 32px;
+  min-height: calc(100vh - 56px);
+  height: 100%;
 }
 
-.dashboard-title {
-  margin: 0 0 12px;
-  font-size: 28px;
-  font-weight: 700;
+.agent-content {
+  width: 100%;
+  height: 100%;
+  background: #f7f7fb;
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.agent-title {
+  margin: 0 0 8px;
   color: #1e3a8a;
+  font-size: 22px;
+  font-weight: 700;
 }
 
-.dashboard-subtitle {
-  margin: 0 0 24px;
+.agent-subtitle {
+  margin: 0;
   color: #475569;
 }
 
-.dashboard-button {
-  background: #1e3a8a;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 12px 18px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
+@media (max-width: 900px) {
+  .agent-body {
+    grid-template-columns: 1fr;
+    padding-left: 80px;
+  }
 }
