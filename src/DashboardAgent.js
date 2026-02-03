@@ -4,6 +4,7 @@ import "./DashboardAgent.css";
 
 function DashboardAgent({ username, onLogout }) {
   const [activeView, setActiveView] = useState("cases");
+  const [showAssignedModal, setShowAssignedModal] = useState(true);
 
   const headingText = activeView === "summary" ? "Summary" : "My Cases";
 
@@ -107,6 +108,59 @@ function DashboardAgent({ username, onLogout }) {
           </div>
         </main>
       </div>
+      {showAssignedModal ? (
+        <div className="agent-modal" role="dialog" aria-modal="true">
+          <div
+            className="agent-modal-backdrop"
+            onClick={() => setShowAssignedModal(false)}
+          />
+          <div className="agent-modal-card">
+            <h2 className="agent-modal-title">New Assigned Case</h2>
+            <p className="agent-modal-text">
+              You have a case assigned to you. Please review the details below.
+            </p>
+            <div className="agent-modal-table">
+              <div className="agent-modal-row agent-modal-row--header">
+                <span>Date</span>
+                <span>Case Number</span>
+                <span>Assigned Time (9AM) EST</span>
+                <span>Met/Not Met TAT</span>
+              </div>
+              <div className="agent-modal-row">
+                <span>02/02/2026</span>
+                <span>CS-2101</span>
+                <span>09:00</span>
+                <span className="agent-modal-status agent-modal-status--missed">
+                  Not Met
+                </span>
+              </div>
+            </div>
+            <div className="agent-modal-actions">
+              <button
+                className="agent-modal-button agent-modal-button--primary"
+                type="button"
+                onClick={() => setShowAssignedModal(false)}
+              >
+                In Progress
+              </button>
+              <button
+                className="agent-modal-button agent-modal-button--secondary"
+                type="button"
+                onClick={() => setShowAssignedModal(false)}
+              >
+                I need Help
+              </button>
+              <button
+                className="agent-modal-button agent-modal-button--ghost"
+                type="button"
+                onClick={() => setShowAssignedModal(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
