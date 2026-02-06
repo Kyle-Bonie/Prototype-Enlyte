@@ -27,14 +27,15 @@
 }
 
 .login-panel--welcome {
-  background: linear-gradient(to bottom, #5b2fe0 0%, #d818d3 200%);
-  color: #ffffff;
+  background: #ffffff;
+  color: #28005a;
   text-align: center;
   gap: 18px;
 }
 
 .login-panel--form {
-  background: #ffffff;
+  background: linear-gradient(to bottom, #5b2fe0 0%, #d818d3 200%);
+  color: #ffffff;
   align-items: flex-start;
 }
 
@@ -75,7 +76,7 @@
   margin: 0 0 18px;
   font-size: 24px;
   font-weight: 700;
-  color: #1e3a8a;
+  color: #ffffff;
 }
 
 .login-form {
@@ -95,7 +96,7 @@
 .login-label {
   font-size: 14px;
   font-weight: 600;
-  color: #111827;
+  color: #ffffff;
 }
 
 .login-input {
@@ -115,13 +116,13 @@
   border: none;
   padding: 0;
   font-size: 12px;
-  color: #2563eb;
+  color: #e0e7ff;
   cursor: pointer;
 }
 
 .login-error {
   margin: 6px 0 0;
-  color: #dc2626;
+  color: #fecaca;
   font-size: 13px;
 }
 
@@ -136,6 +137,18 @@
   cursor: pointer;
   margin-top: 16px;
   box-shadow: 0 10px 20px rgba(30, 58, 138, 0.2);
+  transition: all 0.3s ease;
+}
+
+.login-button:hover {
+  background: #1e40af;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(30, 58, 138, 0.3);
+}
+
+.login-button:active {
+  transform: translateY(0);
+  box-shadow: 0 8px 16px rgba(30, 58, 138, 0.2);
 }
 
 @media (max-width: 1024px) {

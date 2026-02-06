@@ -261,6 +261,27 @@
   background: #f8fafc;
 }
 
+.tl-row {
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.tl-row--met {
+  background: rgba(16, 185, 129, 0.12);
+  color: #0f3d2e;
+}
+
+.tl-row--missed {
+  background: rgba(239, 68, 68, 0.12);
+  color: #5f1d1d;
+}
+
+.tl-row--met td,
+.tl-row--missed td {
+  font-weight: 600;
+}
+
 .tl-table tfoot {
   background: #f1f5f9;
   font-weight: 700;

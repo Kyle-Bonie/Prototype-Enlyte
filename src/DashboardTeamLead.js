@@ -315,7 +315,7 @@ function DashboardTeamLead({ username, onLogout }) {
                         </tr>
                       </thead>
                       <tbody>
-                        <tr>
+                        <tr className="tl-row tl-row--met">
                           <td />
                           <td>01/28/2026</td>
                           <td>CS-1042</td>
@@ -327,8 +327,15 @@ function DashboardTeamLead({ username, onLogout }) {
                           <td>12:30</td>
                           <td className="tl-status tl-status--met">Met</td>
                         </tr>
-                        <tr>
-                          <td />
+                        <tr className="tl-row tl-row--missed">
+                          <td>
+                            <input
+                              type="checkbox"
+                              aria-label="Select case CS-1043"
+                              checked={!!selectedCases["CS-1043"]}
+                              onChange={() => handleCaseToggle("CS-1043")}
+                            />
+                          </td>
                           <td>01/28/2026</td>
                           <td>CS-1043</td>
                           <td>J. Lim</td>
@@ -341,7 +348,7 @@ function DashboardTeamLead({ username, onLogout }) {
                             Not Met
                           </td>
                         </tr>
-                        <tr>
+                        <tr className="tl-row tl-row--met">
                           <td />
                           <td>01/28/2026</td>
                           <td>CS-1044</td>
@@ -353,7 +360,7 @@ function DashboardTeamLead({ username, onLogout }) {
                           <td>14:20</td>
                           <td className="tl-status tl-status--met">Met</td>
                         </tr>
-                        <tr>
+                        <tr className="tl-row tl-row--missed">
                           <td>
                             <input
                               type="checkbox"
@@ -374,7 +381,7 @@ function DashboardTeamLead({ username, onLogout }) {
                             Not Met
                           </td>
                         </tr>
-                        <tr>
+                        <tr className="tl-row tl-row--missed">
                           <td>
                             <input
                               type="checkbox"
