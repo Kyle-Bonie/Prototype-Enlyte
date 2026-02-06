@@ -9,6 +9,10 @@ function DashboardTeamLead({ username, onLogout }) {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   // Upload validation error message.
   const [uploadError, setUploadError] = useState("");
+  // Store uploaded file.
+  const [uploadedFile, setUploadedFile] = useState(null);
+  // Track drag state for visual feedback.
+  const [isDragging, setIsDragging] = useState(false);
   // Manage User data list.
   const [users, setUsers] = useState([
     { id: 1, name: "A. Cruz", role: "Agent", status: "Active" },
@@ -43,10 +47,10 @@ function DashboardTeamLead({ username, onLogout }) {
         : "Manage User";
 
   // Excel file validation for upload modal.
-  const handleFileChange = (event) => {
-    const file = event.target.files?.[0];
+  const validateAndSetFile = (file) => {
     if (!file) {
       setUploadError("");
+      setUploadedFile(null);
       return;
     }
 
@@ -58,11 +62,42 @@ function DashboardTeamLead({ username, onLogout }) {
 
     if (!isExcel) {
       setUploadError("Only Excel files (.xls, .xlsx) are allowed.");
-      event.target.value = "";
+      setUploadedFile(null);
       return;
     }
 
     setUploadError("");
+    setUploadedFile(file);
+  };
+
+  const handleFileChange = (event) => {
+    const file = event.target.files?.[0];
+    validateAndSetFile(file);
+    if (!file || uploadError) {
+      event.target.value = "";
+    }
+  };
+
+  // Drag and drop handlers
+  const handleDragOver = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
+
+    const file = event.dataTransfer.files?.[0];
+    validateAndSetFile(file);
   };
 
   // Manage User form field handler.
@@ -613,7 +648,12 @@ function DashboardTeamLead({ username, onLogout }) {
             >
               ×
             </button>
-            <div className="tl-upload-box">
+            <div
+              className={`tl-upload-box${isDragging ? " tl-upload-box--dragging" : ""}`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
               <div className="tl-upload-icon" aria-hidden="true">
                 ⬆️
               </div>
@@ -631,6 +671,52 @@ function DashboardTeamLead({ username, onLogout }) {
               </label>
               {uploadError ? (
                 <p className="tl-upload-error">{uploadError}</p>
+              ) : null}
+              {uploadedFile ? (
+                <div className="tl-upload-file-info">
+                  <div className="tl-upload-file-details">
+                    <div>
+                      <p className="tl-upload-file-name">
+                        ✓ {uploadedFile.name}
+                      </p>
+                      <p className="tl-upload-file-size">
+                        {(uploadedFile.size / 1024).toFixed(2)} KB
+                      </p>
+                    </div>
+                    <button
+                      className="tl-upload-remove"
+                      type="button"
+                      onClick={() => {
+                        setUploadedFile(null);
+                        setUploadError("");
+                        const input =
+                          document.querySelector(".tl-upload-input");
+                        if (input) input.value = "";
+                      }}
+                      aria-label="Remove file"
+                    >
+                      Remove
+                    </button>
+                    <button
+                      className="tl-upload-save"
+                      type="button"
+                      onClick={() => {
+                        alert(
+                          `File "${uploadedFile.name}" saved successfully!`,
+                        );
+                        setUploadedFile(null);
+                        setUploadError("");
+                        setIsUploadOpen(false);
+                        const input =
+                          document.querySelector(".tl-upload-input");
+                        if (input) input.value = "";
+                      }}
+                      aria-label="Save file"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
               ) : null}
             </div>
           </div>
