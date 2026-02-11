@@ -32,6 +32,8 @@ function DashboardTeamLead({ username, onLogout }) {
   // Assign Case modal state.
   const [isAssignOpen, setIsAssignOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState("");
+  // Search state for Case Table
+  const [searchText, setSearchText] = useState("");
   // Case data state
   const [caseData, setCaseData] = useState([
     {
@@ -229,6 +231,16 @@ function DashboardTeamLead({ username, onLogout }) {
   const hasSelectedCases = Object.values(selectedCases).some(Boolean);
   const availableAgents = users.filter((user) => user.role === "Agent");
 
+  // Filter case data based on search text
+  const filteredCaseData = caseData.filter((caseItem) => {
+    if (!searchText.trim()) return true;
+    const search = searchText.toLowerCase();
+    return (
+      caseItem.id.toLowerCase().includes(search) ||
+      caseItem.agent.toLowerCase().includes(search)
+    );
+  });
+
   const handleOpenAssign = () => {
     setIsAssignOpen(true);
   };
@@ -401,6 +413,15 @@ function DashboardTeamLead({ username, onLogout }) {
                 <section className="tl-tile tl-table-tile">
                   <div className="tl-tile-header">
                     <h2 className="tl-tile-title">Case Table</h2>
+                  </div>
+                  <div className="tl-search-container">
+                    <input
+                      type="text"
+                      className="tl-search-input"
+                      placeholder="Search by Case Number or Agent..."
+                      value={searchText}
+                      onChange={(e) => setSearchText(e.target.value)}
+                    />
                     <button
                       className="tl-assign-button"
                       type="button"
@@ -427,7 +448,7 @@ function DashboardTeamLead({ username, onLogout }) {
                         </tr>
                       </thead>
                       <tbody>
-                        {caseData.map((caseItem) => (
+                        {filteredCaseData.map((caseItem) => (
                           <tr
                             key={caseItem.id}
                             className={`tl-row ${
