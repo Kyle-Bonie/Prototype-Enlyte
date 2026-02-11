@@ -1,5 +1,7 @@
 import { useState } from "react";
 import ApricusLogo from "./assets/ApricusLogo.png";
+import SearchBar from "./components/SearchBar";
+import useSearch from "./hooks/useSearch";
 import "./DashboardTeamLead.css";
 
 function DashboardTeamLead({ username, onLogout }) {
@@ -32,8 +34,13 @@ function DashboardTeamLead({ username, onLogout }) {
   // Assign Case modal state.
   const [isAssignOpen, setIsAssignOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState("");
-  // Search state for Case Table
-  const [searchText, setSearchText] = useState("");
+  // Pagination states
+  const [agentSummaryPage, setAgentSummaryPage] = useState(1);
+  const [caseTablePage, setCaseTablePage] = useState(1);
+  const [historyAgentPage, setHistoryAgentPage] = useState(1);
+  const [historyCasePage, setHistoryCasePage] = useState(1);
+  const [manageUserPage, setManageUserPage] = useState(1);
+  const itemsPerPage = 5;
   // Case data state
   const [caseData, setCaseData] = useState([
     {
@@ -231,15 +238,117 @@ function DashboardTeamLead({ username, onLogout }) {
   const hasSelectedCases = Object.values(selectedCases).some(Boolean);
   const availableAgents = users.filter((user) => user.role === "Agent");
 
-  // Filter case data based on search text
-  const filteredCaseData = caseData.filter((caseItem) => {
-    if (!searchText.trim()) return true;
-    const search = searchText.toLowerCase();
-    return (
+  // Pagination helper functions
+  const paginate = (items, page) => {
+    const startIndex = (page - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return items.slice(startIndex, endIndex);
+  };
+
+  const totalPages = (items) => Math.ceil(items.length / itemsPerPage);
+
+  // Agent summary data (for both Case Summary and Case History views)
+  const agentSummaryData = [
+    { name: "A. Cruz", assigned: 14, urgent: 3, intake: 6, total: 23 },
+    { name: "J. Lim", assigned: 11, urgent: 2, intake: 7, total: 20 },
+    { name: "S. Tan", assigned: 9, urgent: 1, intake: 5, total: 15 },
+    { name: "M. Santos", assigned: 12, urgent: 4, intake: 8, total: 24 },
+    { name: "R. Garcia", assigned: 10, urgent: 2, intake: 6, total: 18 },
+    { name: "L. Reyes", assigned: 8, urgent: 1, intake: 4, total: 13 },
+  ];
+
+  // Case history data
+  const caseHistoryData = [
+    {
+      id: "CS-1001",
+      date: "01/20/2026",
+      agent: "A. Cruz",
+      assignedTime: "09:00",
+      priority: "Urgent",
+      expectedTime: "13:00",
+      touched: "12:00",
+      touchedTimeFix: "12:15",
+      status: "Met",
+    },
+    {
+      id: "CS-1002",
+      date: "01/20/2026",
+      agent: "J. Lim",
+      assignedTime: "09:00",
+      priority: "Standard",
+      expectedTime: "15:00",
+      touched: "16:00",
+      touchedTimeFix: "16:10",
+      status: "Not Met",
+    },
+    {
+      id: "CS-1003",
+      date: "01/21/2026",
+      agent: "S. Tan",
+      assignedTime: "09:00",
+      priority: "Standard",
+      expectedTime: "16:00",
+      touched: "14:30",
+      touchedTimeFix: "14:45",
+      status: "Met",
+    },
+    {
+      id: "CS-1004",
+      date: "01/21/2026",
+      agent: "A. Cruz",
+      assignedTime: "09:00",
+      priority: "Urgent",
+      expectedTime: "13:00",
+      touched: "12:30",
+      touchedTimeFix: "12:40",
+      status: "Met",
+    },
+    {
+      id: "CS-1005",
+      date: "01/22/2026",
+      agent: "J. Lim",
+      assignedTime: "09:00",
+      priority: "Standard",
+      expectedTime: "15:00",
+      touched: "15:20",
+      touchedTimeFix: "15:35",
+      status: "Not Met",
+    },
+    {
+      id: "CS-1006",
+      date: "01/22/2026",
+      agent: "M. Santos",
+      assignedTime: "09:00",
+      priority: "Urgent",
+      expectedTime: "13:00",
+      touched: "11:45",
+      touchedTimeFix: "12:00",
+      status: "Met",
+    },
+  ];
+
+  // Search hooks for filtering data
+  const caseSearch = useSearch(
+    caseData,
+    (caseItem, search) =>
       caseItem.id.toLowerCase().includes(search) ||
-      caseItem.agent.toLowerCase().includes(search)
-    );
-  });
+      caseItem.agent.toLowerCase().includes(search),
+  );
+
+  const agentSummarySearch = useSearch(agentSummaryData, (agent, search) =>
+    agent.name.toLowerCase().includes(search),
+  );
+
+  const historyAgentSearch = useSearch(agentSummaryData, (agent, search) =>
+    agent.name.toLowerCase().includes(search),
+  );
+
+  const caseHistorySearch = useSearch(
+    caseHistoryData,
+    (caseItem, search) =>
+      caseItem.id.toLowerCase().includes(search) ||
+      caseItem.agent.toLowerCase().includes(search),
+  );
 
   const handleOpenAssign = () => {
     setIsAssignOpen(true);
@@ -363,6 +472,11 @@ function DashboardTeamLead({ username, onLogout }) {
                   <div className="tl-tile-header">
                     <h2 className="tl-tile-title">Agent Summary Table</h2>
                   </div>
+                  <SearchBar
+                    value={agentSummarySearch.searchText}
+                    onChange={agentSummarySearch.setSearchText}
+                    placeholder="Search by Agent Name..."
+                  />
                   <div className="tl-table-wrap">
                     <table className="tl-table tl-table--summary">
                       <thead>
@@ -375,38 +489,81 @@ function DashboardTeamLead({ username, onLogout }) {
                         </tr>
                       </thead>
                       <tbody>
-                        <tr>
-                          <td>A. Cruz</td>
-                          <td>14</td>
-                          <td>3</td>
-                          <td>6</td>
-                          <td>23</td>
-                        </tr>
-                        <tr>
-                          <td>J. Lim</td>
-                          <td>11</td>
-                          <td>2</td>
-                          <td>7</td>
-                          <td>20</td>
-                        </tr>
-                        <tr>
-                          <td>S. Tan</td>
-                          <td>9</td>
-                          <td>1</td>
-                          <td>5</td>
-                          <td>15</td>
-                        </tr>
+                        {paginate(
+                          agentSummarySearch.filteredData,
+                          agentSummaryPage,
+                        ).map((agent, index) => (
+                          <tr key={index}>
+                            <td>{agent.name}</td>
+                            <td>{agent.assigned}</td>
+                            <td>{agent.urgent}</td>
+                            <td>{agent.intake}</td>
+                            <td>{agent.total}</td>
+                          </tr>
+                        ))}
                       </tbody>
                       <tfoot>
                         <tr>
                           <td>Total</td>
-                          <td>34</td>
-                          <td>6</td>
-                          <td>18</td>
-                          <td>58</td>
+                          <td>
+                            {agentSummarySearch.filteredData.reduce(
+                              (sum, a) => sum + a.assigned,
+                              0,
+                            )}
+                          </td>
+                          <td>
+                            {agentSummarySearch.filteredData.reduce(
+                              (sum, a) => sum + a.urgent,
+                              0,
+                            )}
+                          </td>
+                          <td>
+                            {agentSummarySearch.filteredData.reduce(
+                              (sum, a) => sum + a.intake,
+                              0,
+                            )}
+                          </td>
+                          <td>
+                            {agentSummarySearch.filteredData.reduce(
+                              (sum, a) => sum + a.total,
+                              0,
+                            )}
+                          </td>
                         </tr>
                       </tfoot>
                     </table>
+                  </div>
+                  <div className="tl-pagination">
+                    <button
+                      className="tl-pagination-btn"
+                      onClick={() =>
+                        setAgentSummaryPage((prev) => Math.max(1, prev - 1))
+                      }
+                      disabled={agentSummaryPage === 1}
+                    >
+                      Previous
+                    </button>
+                    <span className="tl-pagination-info">
+                      Page {agentSummaryPage} of{" "}
+                      {totalPages(agentSummarySearch.filteredData)}
+                    </span>
+                    <button
+                      className="tl-pagination-btn"
+                      onClick={() =>
+                        setAgentSummaryPage((prev) =>
+                          Math.min(
+                            totalPages(agentSummarySearch.filteredData),
+                            prev + 1,
+                          ),
+                        )
+                      }
+                      disabled={
+                        agentSummaryPage ===
+                        totalPages(agentSummarySearch.filteredData)
+                      }
+                    >
+                      Next
+                    </button>
                   </div>
                 </section>
                 {/* Case table tile */}
@@ -415,12 +572,11 @@ function DashboardTeamLead({ username, onLogout }) {
                     <h2 className="tl-tile-title">Case Table</h2>
                   </div>
                   <div className="tl-search-container">
-                    <input
-                      type="text"
-                      className="tl-search-input"
+                    <SearchBar
+                      bare={true}
+                      value={caseSearch.searchText}
+                      onChange={caseSearch.setSearchText}
                       placeholder="Search by Case Number or Agent..."
-                      value={searchText}
-                      onChange={(e) => setSearchText(e.target.value)}
                     />
                     <button
                       className="tl-assign-button"
@@ -448,46 +604,81 @@ function DashboardTeamLead({ username, onLogout }) {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredCaseData.map((caseItem) => (
-                          <tr
-                            key={caseItem.id}
-                            className={`tl-row ${
-                              caseItem.status === "Met"
-                                ? "tl-row--met"
-                                : "tl-row--missed"
-                            }`}
-                          >
-                            <td>
-                              {caseItem.status === "Not Met" ? (
-                                <input
-                                  type="checkbox"
-                                  aria-label={`Select case ${caseItem.id}`}
-                                  checked={!!selectedCases[caseItem.id]}
-                                  onChange={() => handleCaseToggle(caseItem.id)}
-                                />
-                              ) : null}
-                            </td>
-                            <td>{caseItem.date}</td>
-                            <td>{caseItem.id}</td>
-                            <td>{caseItem.agent}</td>
-                            <td>{caseItem.assignedTime}</td>
-                            <td>{caseItem.priority}</td>
-                            <td>{caseItem.expectedTime}</td>
-                            <td>{caseItem.touched}</td>
-                            <td>{caseItem.touchedTimeFix}</td>
-                            <td
-                              className={`tl-status ${
+                        {paginate(caseSearch.filteredData, caseTablePage).map(
+                          (caseItem) => (
+                            <tr
+                              key={caseItem.id}
+                              className={`tl-row ${
                                 caseItem.status === "Met"
-                                  ? "tl-status--met"
-                                  : "tl-status--missed"
+                                  ? "tl-row--met"
+                                  : "tl-row--missed"
                               }`}
                             >
-                              {caseItem.status}
-                            </td>
-                          </tr>
-                        ))}
+                              <td>
+                                {caseItem.status === "Not Met" ? (
+                                  <input
+                                    type="checkbox"
+                                    aria-label={`Select case ${caseItem.id}`}
+                                    checked={!!selectedCases[caseItem.id]}
+                                    onChange={() =>
+                                      handleCaseToggle(caseItem.id)
+                                    }
+                                  />
+                                ) : null}
+                              </td>
+                              <td>{caseItem.date}</td>
+                              <td>{caseItem.id}</td>
+                              <td>{caseItem.agent}</td>
+                              <td>{caseItem.assignedTime}</td>
+                              <td>{caseItem.priority}</td>
+                              <td>{caseItem.expectedTime}</td>
+                              <td>{caseItem.touched}</td>
+                              <td>{caseItem.touchedTimeFix}</td>
+                              <td
+                                className={`tl-status ${
+                                  caseItem.status === "Met"
+                                    ? "tl-status--met"
+                                    : "tl-status--missed"
+                                }`}
+                              >
+                                {caseItem.status}
+                              </td>
+                            </tr>
+                          ),
+                        )}
                       </tbody>
                     </table>
+                  </div>
+                  <div className="tl-pagination">
+                    <button
+                      className="tl-pagination-btn"
+                      onClick={() =>
+                        setCaseTablePage((prev) => Math.max(1, prev - 1))
+                      }
+                      disabled={caseTablePage === 1}
+                    >
+                      Previous
+                    </button>
+                    <span className="tl-pagination-info">
+                      Page {caseTablePage} of{" "}
+                      {totalPages(caseSearch.filteredData)}
+                    </span>
+                    <button
+                      className="tl-pagination-btn"
+                      onClick={() =>
+                        setCaseTablePage((prev) =>
+                          Math.min(
+                            totalPages(caseSearch.filteredData),
+                            prev + 1,
+                          ),
+                        )
+                      }
+                      disabled={
+                        caseTablePage === totalPages(caseSearch.filteredData)
+                      }
+                    >
+                      Next
+                    </button>
                   </div>
                 </section>
               </>
@@ -512,6 +703,11 @@ function DashboardTeamLead({ username, onLogout }) {
                   <div className="tl-tile-header">
                     <h2 className="tl-tile-title">Agent Summary Table</h2>
                   </div>
+                  <SearchBar
+                    value={historyAgentSearch.searchText}
+                    onChange={historyAgentSearch.setSearchText}
+                    placeholder="Search by Agent Name..."
+                  />
                   <div className="tl-table-wrap">
                     <table className="tl-table tl-table--summary">
                       <thead>
@@ -524,38 +720,174 @@ function DashboardTeamLead({ username, onLogout }) {
                         </tr>
                       </thead>
                       <tbody>
-                        <tr>
-                          <td>A. Cruz</td>
-                          <td>14</td>
-                          <td>3</td>
-                          <td>6</td>
-                          <td>23</td>
-                        </tr>
-                        <tr>
-                          <td>J. Lim</td>
-                          <td>11</td>
-                          <td>2</td>
-                          <td>7</td>
-                          <td>20</td>
-                        </tr>
-                        <tr>
-                          <td>S. Tan</td>
-                          <td>9</td>
-                          <td>1</td>
-                          <td>5</td>
-                          <td>15</td>
-                        </tr>
+                        {paginate(
+                          historyAgentSearch.filteredData,
+                          historyAgentPage,
+                        ).map((agent, index) => (
+                          <tr key={index}>
+                            <td>{agent.name}</td>
+                            <td>{agent.assigned}</td>
+                            <td>{agent.urgent}</td>
+                            <td>{agent.intake}</td>
+                            <td>{agent.total}</td>
+                          </tr>
+                        ))}
                       </tbody>
                       <tfoot>
                         <tr>
                           <td>Total</td>
-                          <td>34</td>
-                          <td>6</td>
-                          <td>18</td>
-                          <td>58</td>
+                          <td>
+                            {historyAgentSearch.filteredData.reduce(
+                              (sum, a) => sum + a.assigned,
+                              0,
+                            )}
+                          </td>
+                          <td>
+                            {historyAgentSearch.filteredData.reduce(
+                              (sum, a) => sum + a.urgent,
+                              0,
+                            )}
+                          </td>
+                          <td>
+                            {historyAgentSearch.filteredData.reduce(
+                              (sum, a) => sum + a.intake,
+                              0,
+                            )}
+                          </td>
+                          <td>
+                            {historyAgentSearch.filteredData.reduce(
+                              (sum, a) => sum + a.total,
+                              0,
+                            )}
+                          </td>
                         </tr>
                       </tfoot>
                     </table>
+                  </div>
+                  <div className="tl-pagination">
+                    <button
+                      className="tl-pagination-btn"
+                      onClick={() =>
+                        setHistoryAgentPage((prev) => Math.max(1, prev - 1))
+                      }
+                      disabled={historyAgentPage === 1}
+                    >
+                      Previous
+                    </button>
+                    <span className="tl-pagination-info">
+                      Page {historyAgentPage} of{" "}
+                      {totalPages(historyAgentSearch.filteredData)}
+                    </span>
+                    <button
+                      className="tl-pagination-btn"
+                      onClick={() =>
+                        setHistoryAgentPage((prev) =>
+                          Math.min(
+                            totalPages(historyAgentSearch.filteredData),
+                            prev + 1,
+                          ),
+                        )
+                      }
+                      disabled={
+                        historyAgentPage ===
+                        totalPages(historyAgentSearch.filteredData)
+                      }
+                    >
+                      Next
+                    </button>
+                  </div>
+                </section>
+                {/* Case History table */}
+                <section className="tl-tile tl-table-tile">
+                  <div className="tl-tile-header">
+                    <h2 className="tl-tile-title">Case History Table</h2>
+                  </div>
+                  <SearchBar
+                    value={caseHistorySearch.searchText}
+                    onChange={caseHistorySearch.setSearchText}
+                    placeholder="Search by Case Number or Agent..."
+                  />
+                  <div className="tl-table-wrap">
+                    <table className="tl-table">
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Case Number</th>
+                          <th>Agent</th>
+                          <th>Assigned Time (9AM) EST</th>
+                          <th>Priority</th>
+                          <th>EXCPECTED TIME (EST)</th>
+                          <th>Touched (EST)</th>
+                          <th>Touched Time Fix (EST)</th>
+                          <th>Met/Not Met TAT</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginate(
+                          caseHistorySearch.filteredData,
+                          historyCasePage,
+                        ).map((caseItem) => (
+                          <tr
+                            key={caseItem.id}
+                            className={`tl-row ${
+                              caseItem.status === "Met"
+                                ? "tl-row--met"
+                                : "tl-row--missed"
+                            }`}
+                          >
+                            <td>{caseItem.date}</td>
+                            <td>{caseItem.id}</td>
+                            <td>{caseItem.agent}</td>
+                            <td>{caseItem.assignedTime}</td>
+                            <td>{caseItem.priority}</td>
+                            <td>{caseItem.expectedTime}</td>
+                            <td>{caseItem.touched}</td>
+                            <td>{caseItem.touchedTimeFix}</td>
+                            <td
+                              className={`tl-status ${
+                                caseItem.status === "Met"
+                                  ? "tl-status--met"
+                                  : "tl-status--missed"
+                              }`}
+                            >
+                              {caseItem.status}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="tl-pagination">
+                    <button
+                      className="tl-pagination-btn"
+                      onClick={() =>
+                        setHistoryCasePage((prev) => Math.max(1, prev - 1))
+                      }
+                      disabled={historyCasePage === 1}
+                    >
+                      Previous
+                    </button>
+                    <span className="tl-pagination-info">
+                      Page {historyCasePage} of{" "}
+                      {totalPages(caseHistorySearch.filteredData)}
+                    </span>
+                    <button
+                      className="tl-pagination-btn"
+                      onClick={() =>
+                        setHistoryCasePage((prev) =>
+                          Math.min(
+                            totalPages(caseHistorySearch.filteredData),
+                            prev + 1,
+                          ),
+                        )
+                      }
+                      disabled={
+                        historyCasePage ===
+                        totalPages(caseHistorySearch.filteredData)
+                      }
+                    >
+                      Next
+                    </button>
                   </div>
                 </section>
               </>
@@ -635,7 +967,7 @@ function DashboardTeamLead({ username, onLogout }) {
                         </tr>
                       </thead>
                       <tbody>
-                        {users.map((user) => (
+                        {paginate(users, manageUserPage).map((user) => (
                           <tr key={user.id}>
                             <td>{user.name}</td>
                             <td>{user.role}</td>
@@ -672,6 +1004,31 @@ function DashboardTeamLead({ username, onLogout }) {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                  <div className="tl-pagination">
+                    <button
+                      className="tl-pagination-btn"
+                      onClick={() =>
+                        setManageUserPage((prev) => Math.max(1, prev - 1))
+                      }
+                      disabled={manageUserPage === 1}
+                    >
+                      Previous
+                    </button>
+                    <span className="tl-pagination-info">
+                      Page {manageUserPage} of {totalPages(users)}
+                    </span>
+                    <button
+                      className="tl-pagination-btn"
+                      onClick={() =>
+                        setManageUserPage((prev) =>
+                          Math.min(totalPages(users), prev + 1),
+                        )
+                      }
+                      disabled={manageUserPage === totalPages(users)}
+                    >
+                      Next
+                    </button>
                   </div>
                 </section>
               </>

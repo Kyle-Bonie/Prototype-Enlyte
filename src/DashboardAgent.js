@@ -8,6 +8,91 @@ function DashboardAgent({ username, onLogout }) {
   const [selectedCases, setSelectedCases] = useState({});
   const [showToast, setShowToast] = useState(false);
   const [remainingTime, setRemainingTime] = useState(4 * 60 * 60); // 4 hours in seconds
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  // Case data
+  const caseData = [
+    {
+      id: "CS-2041",
+      date: "01/29/2026",
+      assignedTime: "09:00",
+      priority: "Urgent",
+      expectedTime: "13:30",
+      touched: "12:45",
+      touchedTimeFix: "12:55",
+      status: "Met",
+    },
+    {
+      id: "CS-2042",
+      date: "01/29/2026",
+      assignedTime: "09:00",
+      priority: "Standard",
+      expectedTime: "15:10",
+      touched: "15:40",
+      touchedTimeFix: "15:55",
+      status: "Not Met",
+    },
+    {
+      id: "CS-2043",
+      date: "01/29/2026",
+      assignedTime: "09:00",
+      priority: "Standard",
+      expectedTime: "16:00",
+      touched: "15:30",
+      touchedTimeFix: "15:45",
+      status: "Met",
+    },
+    {
+      id: "CS-2044",
+      date: "01/29/2026",
+      assignedTime: "09:00",
+      priority: "Urgent",
+      expectedTime: "13:00",
+      touched: "14:00",
+      touchedTimeFix: "14:15",
+      status: "Not Met",
+    },
+    {
+      id: "CS-2045",
+      date: "01/29/2026",
+      assignedTime: "09:00",
+      priority: "Standard",
+      expectedTime: "17:00",
+      touched: "16:20",
+      touchedTimeFix: "16:35",
+      status: "Met",
+    },
+    {
+      id: "CS-2046",
+      date: "01/29/2026",
+      assignedTime: "09:00",
+      priority: "Urgent",
+      expectedTime: "13:30",
+      touched: "12:50",
+      touchedTimeFix: "13:05",
+      status: "Met",
+    },
+    {
+      id: "CS-2047",
+      date: "01/29/2026",
+      assignedTime: "09:00",
+      priority: "Standard",
+      expectedTime: "15:30",
+      touched: "16:00",
+      touchedTimeFix: "16:10",
+      status: "Not Met",
+    },
+  ];
+
+  // Pagination helper functions
+  const paginate = (items, page) => {
+    const startIndex = (page - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return items.slice(startIndex, endIndex);
+  };
+
+  const totalPages = Math.ceil(caseData.length / itemsPerPage);
 
   const headingText = activeView === "summary" ? "Summary" : "My Cases";
 
@@ -238,37 +323,68 @@ function DashboardAgent({ username, onLogout }) {
                       </tr>
                     </thead>
                     <tbody>
-                      <tr className="tl-row tl-row--met">
-                        <td />
-                        <td>01/29/2026</td>
-                        <td>CS-2041</td>
-                        <td>09:00</td>
-                        <td>Urgent</td>
-                        <td>13:30</td>
-                        <td>12:45</td>
-                        <td>12:55</td>
-                        <td className="tl-status tl-status--met">Met</td>
-                      </tr>
-                      <tr className="tl-row tl-row--missed">
-                        <td>
-                          <input
-                            type="checkbox"
-                            aria-label="Select case CS-2042"
-                            checked={!!selectedCases["CS-2042"]}
-                            onChange={() => handleCaseToggle("CS-2042")}
-                          />
-                        </td>
-                        <td>01/29/2026</td>
-                        <td>CS-2042</td>
-                        <td>09:00</td>
-                        <td>Standard</td>
-                        <td>15:10</td>
-                        <td>15:40</td>
-                        <td>15:55</td>
-                        <td className="tl-status tl-status--missed">Not Met</td>
-                      </tr>
+                      {paginate(caseData, currentPage).map((caseItem) => (
+                        <tr
+                          key={caseItem.id}
+                          className={`tl-row ${
+                            caseItem.status === "Met"
+                              ? "tl-row--met"
+                              : "tl-row--missed"
+                          }`}
+                        >
+                          <td>
+                            {caseItem.status === "Not Met" ? (
+                              <input
+                                type="checkbox"
+                                aria-label={`Select case ${caseItem.id}`}
+                                checked={!!selectedCases[caseItem.id]}
+                                onChange={() => handleCaseToggle(caseItem.id)}
+                              />
+                            ) : null}
+                          </td>
+                          <td>{caseItem.date}</td>
+                          <td>{caseItem.id}</td>
+                          <td>{caseItem.assignedTime}</td>
+                          <td>{caseItem.priority}</td>
+                          <td>{caseItem.expectedTime}</td>
+                          <td>{caseItem.touched}</td>
+                          <td>{caseItem.touchedTimeFix}</td>
+                          <td
+                            className={`tl-status ${
+                              caseItem.status === "Met"
+                                ? "tl-status--met"
+                                : "tl-status--missed"
+                            }`}
+                          >
+                            {caseItem.status}
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
+                </div>
+                <div className="tl-pagination">
+                  <button
+                    className="tl-pagination-btn"
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(1, prev - 1))
+                    }
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </button>
+                  <span className="tl-pagination-info">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    className="tl-pagination-btn"
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                    }
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </button>
                 </div>
               </section>
             )}
