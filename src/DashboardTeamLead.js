@@ -32,6 +32,64 @@ function DashboardTeamLead({ username, onLogout }) {
   // Assign Case modal state.
   const [isAssignOpen, setIsAssignOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState("");
+  // Case data state
+  const [caseData, setCaseData] = useState([
+    {
+      id: "CS-1042",
+      date: "01/28/2026",
+      agent: "A. Cruz",
+      assignedTime: "09:00",
+      priority: "Urgent",
+      expectedTime: "13:00",
+      touched: "12:20",
+      touchedTimeFix: "12:30",
+      status: "Met",
+    },
+    {
+      id: "CS-1043",
+      date: "01/28/2026",
+      agent: "J. Lim",
+      assignedTime: "09:00",
+      priority: "Standard",
+      expectedTime: "15:00",
+      touched: "15:30",
+      touchedTimeFix: "15:45",
+      status: "Not Met",
+    },
+    {
+      id: "CS-1044",
+      date: "01/28/2026",
+      agent: "S. Tan",
+      assignedTime: "09:00",
+      priority: "Standard",
+      expectedTime: "16:00",
+      touched: "14:10",
+      touchedTimeFix: "14:20",
+      status: "Met",
+    },
+    {
+      id: "CS-1045",
+      date: "01/28/2026",
+      agent: "",
+      assignedTime: "",
+      priority: "Standard",
+      expectedTime: "17:00",
+      touched: "",
+      touchedTimeFix: "",
+      status: "Not Met",
+    },
+    {
+      id: "CS-1046",
+      date: "01/28/2026",
+      agent: "",
+      assignedTime: "",
+      priority: "Urgent",
+      expectedTime: "18:00",
+      touched: "",
+      touchedTimeFix: "",
+      status: "Not Met",
+    },
+  ]);
 
   // Sidebar navigation handler.
   const handleSelectView = (view) => {
@@ -184,7 +242,26 @@ function DashboardTeamLead({ username, onLogout }) {
     if (!selectedAgent) {
       return;
     }
+
+    // Update assigned cases with agent and complete data, but keep as "Not Met"
+    setCaseData((prev) =>
+      prev.map((caseItem) => {
+        if (selectedCases[caseItem.id]) {
+          return {
+            ...caseItem,
+            agent: selectedAgent,
+            assignedTime: "09:00",
+            touched: "15:30",
+            touchedTimeFix: "15:45",
+            status: "Not Met",
+          };
+        }
+        return caseItem;
+      }),
+    );
+
     alert("Case/s is successfully assigned.");
+    setSelectedCases({});
     handleCloseAssign();
   };
 
@@ -350,93 +427,44 @@ function DashboardTeamLead({ username, onLogout }) {
                         </tr>
                       </thead>
                       <tbody>
-                        <tr className="tl-row tl-row--met">
-                          <td />
-                          <td>01/28/2026</td>
-                          <td>CS-1042</td>
-                          <td>A. Cruz</td>
-                          <td>09:00</td>
-                          <td>Urgent</td>
-                          <td>13:00</td>
-                          <td>12:20</td>
-                          <td>12:30</td>
-                          <td className="tl-status tl-status--met">Met</td>
-                        </tr>
-                        <tr className="tl-row tl-row--missed">
-                          <td>
-                            <input
-                              type="checkbox"
-                              aria-label="Select case CS-1043"
-                              checked={!!selectedCases["CS-1043"]}
-                              onChange={() => handleCaseToggle("CS-1043")}
-                            />
-                          </td>
-                          <td>01/28/2026</td>
-                          <td>CS-1043</td>
-                          <td>J. Lim</td>
-                          <td>09:00</td>
-                          <td>Standard</td>
-                          <td>15:00</td>
-                          <td>15:30</td>
-                          <td>15:45</td>
-                          <td className="tl-status tl-status--missed">
-                            Not Met
-                          </td>
-                        </tr>
-                        <tr className="tl-row tl-row--met">
-                          <td />
-                          <td>01/28/2026</td>
-                          <td>CS-1044</td>
-                          <td>S. Tan</td>
-                          <td>09:00</td>
-                          <td>Standard</td>
-                          <td>16:00</td>
-                          <td>14:10</td>
-                          <td>14:20</td>
-                          <td className="tl-status tl-status--met">Met</td>
-                        </tr>
-                        <tr className="tl-row tl-row--missed">
-                          <td>
-                            <input
-                              type="checkbox"
-                              aria-label="Select case CS-1045"
-                              checked={!!selectedCases["CS-1045"]}
-                              onChange={() => handleCaseToggle("CS-1045")}
-                            />
-                          </td>
-                          <td>01/28/2026</td>
-                          <td>CS-1045</td>
-                          <td />
-                          <td />
-                          <td>Standard</td>
-                          <td>17:00</td>
-                          <td />
-                          <td />
-                          <td className="tl-status tl-status--missed">
-                            Not Met
-                          </td>
-                        </tr>
-                        <tr className="tl-row tl-row--missed">
-                          <td>
-                            <input
-                              type="checkbox"
-                              aria-label="Select case CS-1046"
-                              checked={!!selectedCases["CS-1046"]}
-                              onChange={() => handleCaseToggle("CS-1046")}
-                            />
-                          </td>
-                          <td>01/28/2026</td>
-                          <td>CS-1046</td>
-                          <td />
-                          <td />
-                          <td>Urgent</td>
-                          <td>18:00</td>
-                          <td />
-                          <td />
-                          <td className="tl-status tl-status--missed">
-                            Not Met
-                          </td>
-                        </tr>
+                        {caseData.map((caseItem) => (
+                          <tr
+                            key={caseItem.id}
+                            className={`tl-row ${
+                              caseItem.status === "Met"
+                                ? "tl-row--met"
+                                : "tl-row--missed"
+                            }`}
+                          >
+                            <td>
+                              {caseItem.status === "Not Met" ? (
+                                <input
+                                  type="checkbox"
+                                  aria-label={`Select case ${caseItem.id}`}
+                                  checked={!!selectedCases[caseItem.id]}
+                                  onChange={() => handleCaseToggle(caseItem.id)}
+                                />
+                              ) : null}
+                            </td>
+                            <td>{caseItem.date}</td>
+                            <td>{caseItem.id}</td>
+                            <td>{caseItem.agent}</td>
+                            <td>{caseItem.assignedTime}</td>
+                            <td>{caseItem.priority}</td>
+                            <td>{caseItem.expectedTime}</td>
+                            <td>{caseItem.touched}</td>
+                            <td>{caseItem.touchedTimeFix}</td>
+                            <td
+                              className={`tl-status ${
+                                caseItem.status === "Met"
+                                  ? "tl-status--met"
+                                  : "tl-status--missed"
+                              }`}
+                            >
+                              {caseItem.status}
+                            </td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>

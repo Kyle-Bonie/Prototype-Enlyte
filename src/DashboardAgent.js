@@ -29,7 +29,18 @@ function DashboardAgent({ username, onLogout }) {
               "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZijcIF2m98OScTgwPUKfj8LZjHAY4ktjyzXksBS",
             );
             audio.volume = 0.7;
+
+            // Play sound immediately
             audio.play().catch((e) => console.log("Audio play failed:", e));
+
+            // Loop sound every 5 seconds
+            const soundInterval = setInterval(() => {
+              audio.currentTime = 0;
+              audio.play().catch((e) => console.log("Audio play failed:", e));
+            }, 2000);
+
+            // Store interval ID for cleanup
+            window.agentSoundInterval = soundInterval;
 
             new Notification("New Case Assigned", {
               body: "You have a new case assigned: CS-2101",
@@ -95,6 +106,11 @@ function DashboardAgent({ username, onLogout }) {
       }
       // Clear notification timeout if component unmounts before notifications show
       clearTimeout(notificationTimeout);
+      // Clear sound interval
+      if (window.agentSoundInterval) {
+        clearInterval(window.agentSoundInterval);
+        window.agentSoundInterval = null;
+      }
     };
   }, []);
 
@@ -130,6 +146,15 @@ function DashboardAgent({ username, onLogout }) {
   const handleMarkAsDone = () => {
     alert("Case/s marked as done.");
     setSelectedCases({});
+  };
+
+  const handleCloseModal = () => {
+    setShowAssignedModal(false);
+    // Stop the notification sound when modal is closed
+    if (window.agentSoundInterval) {
+      clearInterval(window.agentSoundInterval);
+      window.agentSoundInterval = null;
+    }
   };
 
   return (
@@ -252,10 +277,7 @@ function DashboardAgent({ username, onLogout }) {
       </div>
       {showAssignedModal ? (
         <div className="agent-modal" role="dialog" aria-modal="true">
-          <div
-            className="agent-modal-backdrop"
-            onClick={() => setShowAssignedModal(false)}
-          />
+          <div className="agent-modal-backdrop" onClick={handleCloseModal} />
           <div className="agent-modal-card">
             <h2 className="agent-modal-title">New Assigned Case</h2>
             <p className="agent-modal-text">
@@ -285,21 +307,21 @@ function DashboardAgent({ username, onLogout }) {
               <button
                 className="agent-modal-button agent-modal-button--primary"
                 type="button"
-                onClick={() => setShowAssignedModal(false)}
+                onClick={handleCloseModal}
               >
                 In Progress
               </button>
               <button
                 className="agent-modal-button agent-modal-button--secondary"
                 type="button"
-                onClick={() => setShowAssignedModal(false)}
+                onClick={handleCloseModal}
               >
                 I need Help
               </button>
               <button
                 className="agent-modal-button agent-modal-button--ghost"
                 type="button"
-                onClick={() => setShowAssignedModal(false)}
+                onClick={handleCloseModal}
               >
                 Cancel
               </button>
