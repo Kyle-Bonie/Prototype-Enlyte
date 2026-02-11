@@ -122,8 +122,9 @@
 
 .login-error {
   margin: 6px 0 0;
-  color: #fecaca;
+  color: #e87070;
   font-size: 13px;
+  text-align: center;
 }
 
 .login-button {

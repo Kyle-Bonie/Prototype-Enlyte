@@ -77,11 +77,6 @@ function LoginPage({ onLoginSuccess }) {
                 onChange={(event) => setPassword(event.target.value)}
               />
             </div>
-            <div className="login-forgot">
-              <button className="login-forgot-link" type="button">
-                Forgot password?
-              </button>
-            </div>
 
             {error ? <p className="login-error">{error}</p> : null}
 
