@@ -2,30 +2,49 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./LoginPage.css";
 import apricusLogo from "./assets/ApricusLogo.png";
+import { authAPI } from "./api/apiClient";
 
 function LoginPage({ onLoginSuccess }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    if (username === "teamLead" && password === "we") {
-      onLoginSuccess({ username, role: "teamLead" });
-      setError("");
-      navigate("/team-lead");
-      return;
-    }
+    setError("");
+    setIsLoading(true);
 
-    if (username === "agent" && password === "we") {
-      onLoginSuccess({ username, role: "agent" });
-      setError("");
-      navigate("/agent");
-      return;
-    }
+    try {
+      // Call backend API
+      const data = await authAPI.login(username, password);
 
-    setError("Invalid username or password.");
+      if (data.success) {
+        // Store token and user data
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+
+        // Call parent login handler
+        onLoginSuccess({
+          username: data.user.username,
+          role: data.user.role === "Agent" ? "agent" : "teamLead",
+        });
+
+        // Navigate based on role
+        if (data.user.role === "Agent") {
+          navigate("/agent");
+        } else if (data.user.role === "Team Lead") {
+          navigate("/team-lead");
+        }
+      } else {
+        setError(data.error || "Login failed");
+      }
+    } catch (err) {
+      setError(err.message || "Network error. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -80,8 +99,33 @@ function LoginPage({ onLoginSuccess }) {
 
             {error ? <p className="login-error">{error}</p> : null}
 
-            <button className="login-button" type="submit">
-              Login
+            <button className="login-button" type="submit" disabled={isLoading}>
+              {isLoading ? (
+                <span
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <svg
+                    style={{ animation: "spin 1s linear infinite" }}
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
+                    <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" />
+                  </svg>
+                  Logging in...
+                </span>
+              ) : (
+                "Login"
+              )}
             </button>
           </form>
         </div>

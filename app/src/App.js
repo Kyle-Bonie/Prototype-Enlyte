@@ -10,6 +10,7 @@ import "./App.css";
 import LoginPage from "./LoginPage";
 import DashboardAgent from "./DashboardAgent";
 import DashboardTeamLead from "./DashboardTeamLead";
+import { authAPI } from "./api/apiClient";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -24,9 +25,19 @@ function App() {
 function AppRoutes({ user, setUser }) {
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    setUser(null);
-    navigate("/");
+  const handleLogout = async () => {
+    try {
+      // Call backend logout (optional, since JWT is stateless)
+      await authAPI.logout();
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      // Clear local storage and user state
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      setUser(null);
+      navigate("/");
+    }
   };
 
   const requireRole = (role, element) =>
