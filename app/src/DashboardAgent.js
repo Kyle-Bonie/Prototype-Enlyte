@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import ApricusLogo from "./assets/ApricusLogo.png";
+import DashboardAgentNeedHelp from "./components/DashboardAgentNeedHelp";
 import "./DashboardAgent.css";
 
 function DashboardAgent({ username, onLogout }) {
@@ -10,6 +11,46 @@ function DashboardAgent({ username, onLogout }) {
   const [remainingTime, setRemainingTime] = useState(4 * 60 * 60); // 4 hours in seconds
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
+  const [caseStatuses, setCaseStatuses] = useState({});
+  const [isNeedHelpOpen, setIsNeedHelpOpen] = useState(false);
+  const [dateRange, setDateRange] = useState("today");
+
+  // Helper function to calculate date ranges
+  const getDateRange = (range) => {
+    const today = new Date();
+    const formatDate = (date) => {
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      const year = date.getFullYear();
+      return `${month}/${day}/${year}`;
+    };
+
+    switch (range) {
+      case "today":
+        return formatDate(today);
+      case "thisWeek": {
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay());
+        return `${formatDate(startOfWeek)} - ${formatDate(today)}`;
+      }
+      case "thisMonth": {
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        return `${formatDate(startOfMonth)} - ${formatDate(today)}`;
+      }
+      case "last7Days": {
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(today.getDate() - 7);
+        return `${formatDate(sevenDaysAgo)} - ${formatDate(today)}`;
+      }
+      case "last30Days": {
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(today.getDate() - 30);
+        return `${formatDate(thirtyDaysAgo)} - ${formatDate(today)}`;
+      }
+      default:
+        return formatDate(today);
+    }
+  };
 
   // Case data
   const caseData = [
@@ -180,7 +221,7 @@ function DashboardAgent({ username, onLogout }) {
         document.head.appendChild(link);
       };
       img.src = "/EnlyteLogo.png";
-    }, 10000); // 10 seconds delay for all notifications
+    }, 3000); // 3 seconds delay for all notifications
 
     // Clean up when component unmounts
     return () => {
@@ -229,6 +270,15 @@ function DashboardAgent({ username, onLogout }) {
   const hasSelectedCases = Object.values(selectedCases).some(Boolean);
 
   const handleMarkAsDone = () => {
+    // Update status for selected cases to "Met"
+    const updatedStatuses = { ...caseStatuses };
+    Object.keys(selectedCases).forEach((caseId) => {
+      if (selectedCases[caseId]) {
+        updatedStatuses[caseId] = "Met";
+      }
+    });
+    setCaseStatuses(updatedStatuses);
+
     alert("Case/s marked as done.");
     setSelectedCases({});
   };
@@ -281,31 +331,122 @@ function DashboardAgent({ username, onLogout }) {
             <h1 className="agent-title">{headingText}</h1>
             <p className="agent-subtitle">Welcome, {username}.</p>
             {activeView === "summary" ? (
-              <div className="tl-tiles">
-                <section className="tl-tile">
+              <>
+                <div className="tl-tiles">
+                  <section className="tl-tile">
+                    <div className="tl-tile-header">
+                      <h2 className="tl-tile-title">Chart Preview</h2>
+                    </div>
+                    <div className="tl-chart">
+                      <div className="tl-chart-bar" />
+                      <div className="tl-chart-bar" />
+                      <div className="tl-chart-bar" />
+                      <div className="tl-chart-bar" />
+                    </div>
+                  </section>
+                </div>
+                <section className="tl-tile tl-table-tile">
                   <div className="tl-tile-header">
-                    <h2 className="tl-tile-title">Chart Preview</h2>
+                    <h2 className="tl-tile-title">My Cases Summary</h2>
+                    <div className="agent-date-range">
+                      <select
+                        value={dateRange}
+                        onChange={(e) => setDateRange(e.target.value)}
+                        className="agent-date-selector"
+                      >
+                        <option value="today">Today</option>
+                        <option value="thisWeek">This Week</option>
+                        <option value="thisMonth">This Month</option>
+                        <option value="last7Days">Last 7 Days</option>
+                        <option value="last30Days">Last 30 Days</option>
+                      </select>
+                      <span className="agent-date-display">
+                        {getDateRange(dateRange)}
+                      </span>
+                    </div>
                   </div>
-                  <div className="tl-chart">
-                    <div className="tl-chart-bar" />
-                    <div className="tl-chart-bar" />
-                    <div className="tl-chart-bar" />
-                    <div className="tl-chart-bar" />
+                  <div className="tl-table-wrap">
+                    <table className="tl-table">
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Case Number</th>
+                          <th>Assigned Time (9AM) EST</th>
+                          <th>Priority</th>
+                          <th>EXCPECTED TIME (EST)</th>
+                          <th>Touched (EST)</th>
+                          <th>Touched Time Fix (EST)</th>
+                          <th>Met/Not Met TAT</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginate(caseData, currentPage).map((caseItem) => {
+                          return (
+                            <tr
+                              key={caseItem.id}
+                              className="tl-row tl-row--met"
+                            >
+                              <td>{caseItem.date}</td>
+                              <td>{caseItem.id}</td>
+                              <td>{caseItem.assignedTime}</td>
+                              <td>{caseItem.priority}</td>
+                              <td>{caseItem.expectedTime}</td>
+                              <td>{caseItem.touched}</td>
+                              <td>{caseItem.touchedTimeFix}</td>
+                              <td className="tl-status tl-status--met">Met</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="tl-pagination">
+                    <button
+                      className="tl-pagination-btn"
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(1, prev - 1))
+                      }
+                      disabled={currentPage === 1}
+                    >
+                      Previous
+                    </button>
+                    <span className="tl-pagination-info">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                      className="tl-pagination-btn"
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                      }
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                    </button>
                   </div>
                 </section>
-              </div>
+              </>
             ) : (
               <section className="tl-tile tl-table-tile">
                 <div className="tl-tile-header">
                   <h2 className="tl-tile-title">Case Table</h2>
-                  <button
-                    className="tl-assign-button"
-                    type="button"
-                    disabled={!hasSelectedCases}
-                    onClick={handleMarkAsDone}
-                  >
-                    Mark as Done
-                  </button>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      className="tl-assign-button"
+                      type="button"
+                      disabled={!hasSelectedCases}
+                      onClick={handleMarkAsDone}
+                    >
+                      Mark as Done
+                    </button>
+                    <button
+                      className="tl-assign-button"
+                      type="button"
+                      style={{ background: "#dc2626" }}
+                      onClick={() => setIsNeedHelpOpen(true)}
+                    >
+                      Need Help?
+                    </button>
+                  </div>
                 </div>
                 <div className="tl-table-wrap">
                   <table className="tl-table">
@@ -323,43 +464,47 @@ function DashboardAgent({ username, onLogout }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {paginate(caseData, currentPage).map((caseItem) => (
-                        <tr
-                          key={caseItem.id}
-                          className={`tl-row ${
-                            caseItem.status === "Met"
-                              ? "tl-row--met"
-                              : "tl-row--missed"
-                          }`}
-                        >
-                          <td>
-                            {caseItem.status === "Not Met" ? (
-                              <input
-                                type="checkbox"
-                                aria-label={`Select case ${caseItem.id}`}
-                                checked={!!selectedCases[caseItem.id]}
-                                onChange={() => handleCaseToggle(caseItem.id)}
-                              />
-                            ) : null}
-                          </td>
-                          <td>{caseItem.date}</td>
-                          <td>{caseItem.id}</td>
-                          <td>{caseItem.assignedTime}</td>
-                          <td>{caseItem.priority}</td>
-                          <td>{caseItem.expectedTime}</td>
-                          <td>{caseItem.touched}</td>
-                          <td>{caseItem.touchedTimeFix}</td>
-                          <td
-                            className={`tl-status ${
-                              caseItem.status === "Met"
-                                ? "tl-status--met"
-                                : "tl-status--missed"
+                      {paginate(caseData, currentPage).map((caseItem) => {
+                        const currentStatus =
+                          caseStatuses[caseItem.id] || caseItem.status;
+                        return (
+                          <tr
+                            key={caseItem.id}
+                            className={`tl-row ${
+                              currentStatus === "Met"
+                                ? "tl-row--met"
+                                : "tl-row--missed"
                             }`}
                           >
-                            {caseItem.status}
-                          </td>
-                        </tr>
-                      ))}
+                            <td>
+                              {currentStatus === "Not Met" ? (
+                                <input
+                                  type="checkbox"
+                                  aria-label={`Select case ${caseItem.id}`}
+                                  checked={!!selectedCases[caseItem.id]}
+                                  onChange={() => handleCaseToggle(caseItem.id)}
+                                />
+                              ) : null}
+                            </td>
+                            <td>{caseItem.date}</td>
+                            <td>{caseItem.id}</td>
+                            <td>{caseItem.assignedTime}</td>
+                            <td>{caseItem.priority}</td>
+                            <td>{caseItem.expectedTime}</td>
+                            <td>{caseItem.touched}</td>
+                            <td>{caseItem.touchedTimeFix}</td>
+                            <td
+                              className={`tl-status ${
+                                currentStatus === "Met"
+                                  ? "tl-status--met"
+                                  : "tl-status--missed"
+                              }`}
+                            >
+                              {currentStatus}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -445,6 +590,11 @@ function DashboardAgent({ username, onLogout }) {
           </div>
         </div>
       ) : null}
+      <DashboardAgentNeedHelp
+        isOpen={isNeedHelpOpen}
+        onClose={() => setIsNeedHelpOpen(false)}
+        caseData={caseData}
+      />
       {showToast ? (
         <div className="agent-toast">
           <div className="agent-toast-content">

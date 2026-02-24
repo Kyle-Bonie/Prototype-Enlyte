@@ -25,6 +25,8 @@
   width: auto;
   object-fit: contain;
   padding-right: 60px;
+  filter: brightness(0) saturate(100%) invert(9%) sepia(13%) saturate(2793%)
+    hue-rotate(188deg) brightness(95%) contrast(96%);
 }
 
 .tl-body {
@@ -128,6 +130,11 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
+}
+
+/* Upload Excel tile - reduced width, only in summary view */
+.tl-tiles:has(.tl-tile .tl-upload-button) {
+  grid-template-columns: minmax(220px, 400px);
 }
 
 .tl-tile {
@@ -717,6 +724,63 @@
 .tl-pagination-info {
   font-size: 14px;
   color: #64748b;
+  font-weight: 500;
+}
+
+/* Notification Table Styles */
+.tl-table--notification {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 860px;
+  font-size: 12px;
+  color: #1f2937;
+}
+
+.tl-table--notification thead {
+  background: #eef2ff;
+}
+
+.tl-table--notification th,
+.tl-table--notification td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tl-table--notification th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #334155;
+}
+
+.tl-table--notification tbody tr:hover {
+  background: #f8fafc;
+}
+
+.tl-table--notification th:first-child,
+.tl-table--notification td:first-child {
+  text-align: left;
+}
+
+.tl-notification-agent {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.tl-notification-case {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.tl-notification-reason {
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.tl-notification-time {
+  color: #1f2937;
   font-weight: 500;
 }
 

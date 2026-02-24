@@ -1,6 +1,11 @@
 import { useState } from "react";
 import ApricusLogo from "./assets/ApricusLogo.png";
 import SearchBar from "./components/SearchBar";
+import DashboardTeamLeadCharts, {
+  PieChart,
+  TATColumnChart,
+} from "./components/DashboardTeamLeadCharts";
+import NotificationCarousel from "./components/NotificationCarousel";
 import useSearch from "./hooks/useSearch";
 import "./DashboardTeamLead.css";
 
@@ -15,6 +20,8 @@ function DashboardTeamLead({ username, onLogout }) {
   const [uploadedFile, setUploadedFile] = useState(null);
   // Track drag state for visual feedback.
   const [isDragging, setIsDragging] = useState(false);
+  // Track if data has been uploaded (controls table visibility)
+  const [isDataUploaded, setIsDataUploaded] = useState(false);
   // Manage User data list.
   const [users, setUsers] = useState([
     { id: 1, name: "A. Cruz", role: "Agent", status: "Active" },
@@ -41,8 +48,11 @@ function DashboardTeamLead({ username, onLogout }) {
   const [historyCasePage, setHistoryCasePage] = useState(1);
   const [manageUserPage, setManageUserPage] = useState(1);
   const itemsPerPage = 5;
-  // Case data state
-  const [caseData, setCaseData] = useState([
+  // Case data state - starts empty until file is uploaded
+  const [caseData, setCaseData] = useState([]);
+
+  // Static data to populate when file is uploaded
+  const STATIC_CASE_DATA = [
     {
       id: "CS-1042",
       date: "01/28/2026",
@@ -98,7 +108,7 @@ function DashboardTeamLead({ username, onLogout }) {
       touchedTimeFix: "",
       status: "Not Met",
     },
-  ]);
+  ];
 
   // Sidebar navigation handler.
   const handleSelectView = (view) => {
@@ -111,7 +121,9 @@ function DashboardTeamLead({ username, onLogout }) {
       ? "Case Summary"
       : activeView === "history"
         ? "Case History"
-        : "Manage User";
+        : activeView === "notification"
+          ? "Notifications"
+          : "Manage User";
 
   // Excel file validation for upload modal.
   const validateAndSetFile = (file) => {
@@ -247,8 +259,11 @@ function DashboardTeamLead({ username, onLogout }) {
 
   const totalPages = (items) => Math.ceil(items.length / itemsPerPage);
 
-  // Agent summary data (for both Case Summary and Case History views)
-  const agentSummaryData = [
+  // Agent summary data (for both Case Summary and Case History views) - starts empty
+  const [agentSummaryData, setAgentSummaryData] = useState([]);
+
+  // Static agent summary data to populate on upload
+  const STATIC_AGENT_SUMMARY = [
     { name: "A. Cruz", assigned: 14, urgent: 3, intake: 6, total: 23 },
     { name: "J. Lim", assigned: 11, urgent: 2, intake: 7, total: 20 },
     { name: "S. Tan", assigned: 9, urgent: 1, intake: 5, total: 15 },
@@ -257,8 +272,11 @@ function DashboardTeamLead({ username, onLogout }) {
     { name: "L. Reyes", assigned: 8, urgent: 1, intake: 4, total: 13 },
   ];
 
-  // Case history data
-  const caseHistoryData = [
+  // Case history data - starts empty
+  const [caseHistoryData, setCaseHistoryData] = useState([]);
+
+  // Static case history data to populate on upload
+  const STATIC_CASE_HISTORY = [
     {
       id: "CS-1001",
       date: "01/20/2026",
@@ -417,6 +435,16 @@ function DashboardTeamLead({ username, onLogout }) {
               <span className="tl-nav-text">Case History</span>
             </button>
             <button
+              className={`tl-nav-item${activeView === "notification" ? " active" : ""}`}
+              type="button"
+              onClick={() => handleSelectView("notification")}
+            >
+              <span className="tl-nav-icon" aria-hidden="true">
+                🔔
+              </span>
+              <span className="tl-nav-text">Notification</span>
+            </button>
+            <button
               className={`tl-nav-item${activeView === "manage" ? " active" : ""}`}
               type="button"
               onClick={() => handleSelectView("manage")}
@@ -433,13 +461,17 @@ function DashboardTeamLead({ username, onLogout }) {
           </button>
         </aside>
         <main className="tl-main">
+          <NotificationCarousel
+            isVisible={activeView !== "notification"}
+            onNotificationClick={() => handleSelectView("notification")}
+          />
           <div className="tl-content">
             <h1 className="tl-title">{headingText}</h1>
-            <p className="tl-subtitle">Welcome, {username}.</p>
+            <p className="tl-subtitle">Welcome, Team Lead.</p>
             {/* Case Summary view */}
             {activeView === "summary" ? (
               <>
-                {/* Summary tiles row */}
+                {/* First row: Upload Excel tile */}
                 <div className="tl-tiles">
                   <section className="tl-tile">
                     <div className="tl-tile-header">
@@ -454,17 +486,26 @@ function DashboardTeamLead({ username, onLogout }) {
                       Upload File
                     </button>
                   </section>
-                  {/* Placeholder chart tile */}
+                </div>
+                {/* Second row: Both charts side by side */}
+                <div className="tl-tiles">
+                  {/* TAT Column Chart */}
                   <section className="tl-tile">
                     <div className="tl-tile-header">
-                      <h2 className="tl-tile-title">Chart Preview</h2>
+                      <h2 className="tl-tile-title">
+                        Met and Not Met Cases Count
+                      </h2>
                     </div>
-                    <div className="tl-chart">
-                      <div className="tl-chart-bar" />
-                      <div className="tl-chart-bar" />
-                      <div className="tl-chart-bar" />
-                      <div className="tl-chart-bar" />
+                    <TATColumnChart data={caseData} />
+                  </section>
+                  {/* Agent workload pie chart */}
+                  <section className="tl-tile">
+                    <div className="tl-tile-header">
+                      <h2 className="tl-tile-title">
+                        Agent Workload Distribution
+                      </h2>
                     </div>
+                    <PieChart data={agentSummaryData} />
                   </section>
                 </div>
                 {/* Agent summary table tile */}
@@ -489,18 +530,34 @@ function DashboardTeamLead({ username, onLogout }) {
                         </tr>
                       </thead>
                       <tbody>
-                        {paginate(
-                          agentSummarySearch.filteredData,
-                          agentSummaryPage,
-                        ).map((agent, index) => (
-                          <tr key={index}>
-                            <td>{agent.name}</td>
-                            <td>{agent.assigned}</td>
-                            <td>{agent.urgent}</td>
-                            <td>{agent.intake}</td>
-                            <td>{agent.total}</td>
+                        {agentSummarySearch.filteredData.length === 0 ? (
+                          <tr>
+                            <td
+                              colSpan="5"
+                              style={{
+                                textAlign: "center",
+                                padding: "40px",
+                                color: "#999",
+                                fontStyle: "italic",
+                              }}
+                            >
+                              No Available Data
+                            </td>
                           </tr>
-                        ))}
+                        ) : (
+                          paginate(
+                            agentSummarySearch.filteredData,
+                            agentSummaryPage,
+                          ).map((agent, index) => (
+                            <tr key={index}>
+                              <td>{agent.name}</td>
+                              <td>{agent.assigned}</td>
+                              <td>{agent.urgent}</td>
+                              <td>{agent.intake}</td>
+                              <td>{agent.total}</td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                       <tfoot>
                         <tr>
@@ -604,47 +661,63 @@ function DashboardTeamLead({ username, onLogout }) {
                         </tr>
                       </thead>
                       <tbody>
-                        {paginate(caseSearch.filteredData, caseTablePage).map(
-                          (caseItem) => (
-                            <tr
-                              key={caseItem.id}
-                              className={`tl-row ${
-                                caseItem.status === "Met"
-                                  ? "tl-row--met"
-                                  : "tl-row--missed"
-                              }`}
+                        {caseSearch.filteredData.length === 0 ? (
+                          <tr>
+                            <td
+                              colSpan="10"
+                              style={{
+                                textAlign: "center",
+                                padding: "40px",
+                                color: "#999",
+                                fontStyle: "italic",
+                              }}
                             >
-                              <td>
-                                {caseItem.status === "Not Met" ? (
-                                  <input
-                                    type="checkbox"
-                                    aria-label={`Select case ${caseItem.id}`}
-                                    checked={!!selectedCases[caseItem.id]}
-                                    onChange={() =>
-                                      handleCaseToggle(caseItem.id)
-                                    }
-                                  />
-                                ) : null}
-                              </td>
-                              <td>{caseItem.date}</td>
-                              <td>{caseItem.id}</td>
-                              <td>{caseItem.agent}</td>
-                              <td>{caseItem.assignedTime}</td>
-                              <td>{caseItem.priority}</td>
-                              <td>{caseItem.expectedTime}</td>
-                              <td>{caseItem.touched}</td>
-                              <td>{caseItem.touchedTimeFix}</td>
-                              <td
-                                className={`tl-status ${
+                              No Available Data
+                            </td>
+                          </tr>
+                        ) : (
+                          paginate(caseSearch.filteredData, caseTablePage).map(
+                            (caseItem) => (
+                              <tr
+                                key={caseItem.id}
+                                className={`tl-row ${
                                   caseItem.status === "Met"
-                                    ? "tl-status--met"
-                                    : "tl-status--missed"
+                                    ? "tl-row--met"
+                                    : "tl-row--missed"
                                 }`}
                               >
-                                {caseItem.status}
-                              </td>
-                            </tr>
-                          ),
+                                <td>
+                                  {caseItem.status === "Not Met" ? (
+                                    <input
+                                      type="checkbox"
+                                      aria-label={`Select case ${caseItem.id}`}
+                                      checked={!!selectedCases[caseItem.id]}
+                                      onChange={() =>
+                                        handleCaseToggle(caseItem.id)
+                                      }
+                                    />
+                                  ) : null}
+                                </td>
+                                <td>{caseItem.date}</td>
+                                <td>{caseItem.id}</td>
+                                <td>{caseItem.agent}</td>
+                                <td>{caseItem.assignedTime}</td>
+                                <td>{caseItem.priority}</td>
+                                <td>{caseItem.expectedTime}</td>
+                                <td>{caseItem.touched}</td>
+                                <td>{caseItem.touchedTimeFix}</td>
+                                <td
+                                  className={`tl-status ${
+                                    caseItem.status === "Met"
+                                      ? "tl-status--met"
+                                      : "tl-status--missed"
+                                  }`}
+                                >
+                                  {caseItem.status}
+                                </td>
+                              </tr>
+                            ),
+                          )
                         )}
                       </tbody>
                     </table>
@@ -698,10 +771,10 @@ function DashboardTeamLead({ username, onLogout }) {
                     </div>
                   </section>
                 </div>
-                {/* Agent summary table for history view */}
+                {/* Agent history table for history view */}
                 <section className="tl-tile tl-table-tile">
                   <div className="tl-tile-header">
-                    <h2 className="tl-tile-title">Agent Summary Table</h2>
+                    <h2 className="tl-tile-title">Agent History Table</h2>
                   </div>
                   <SearchBar
                     value={historyAgentSearch.searchText}
@@ -720,18 +793,34 @@ function DashboardTeamLead({ username, onLogout }) {
                         </tr>
                       </thead>
                       <tbody>
-                        {paginate(
-                          historyAgentSearch.filteredData,
-                          historyAgentPage,
-                        ).map((agent, index) => (
-                          <tr key={index}>
-                            <td>{agent.name}</td>
-                            <td>{agent.assigned}</td>
-                            <td>{agent.urgent}</td>
-                            <td>{agent.intake}</td>
-                            <td>{agent.total}</td>
+                        {historyAgentSearch.filteredData.length === 0 ? (
+                          <tr>
+                            <td
+                              colSpan="5"
+                              style={{
+                                textAlign: "center",
+                                padding: "40px",
+                                color: "#999",
+                                fontStyle: "italic",
+                              }}
+                            >
+                              No Available Data
+                            </td>
                           </tr>
-                        ))}
+                        ) : (
+                          paginate(
+                            historyAgentSearch.filteredData,
+                            historyAgentPage,
+                          ).map((agent, index) => (
+                            <tr key={index}>
+                              <td>{agent.name}</td>
+                              <td>{agent.assigned}</td>
+                              <td>{agent.urgent}</td>
+                              <td>{agent.intake}</td>
+                              <td>{agent.total}</td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                       <tfoot>
                         <tr>
@@ -823,37 +912,53 @@ function DashboardTeamLead({ username, onLogout }) {
                         </tr>
                       </thead>
                       <tbody>
-                        {paginate(
-                          caseHistorySearch.filteredData,
-                          historyCasePage,
-                        ).map((caseItem) => (
-                          <tr
-                            key={caseItem.id}
-                            className={`tl-row ${
-                              caseItem.status === "Met"
-                                ? "tl-row--met"
-                                : "tl-row--missed"
-                            }`}
-                          >
-                            <td>{caseItem.date}</td>
-                            <td>{caseItem.id}</td>
-                            <td>{caseItem.agent}</td>
-                            <td>{caseItem.assignedTime}</td>
-                            <td>{caseItem.priority}</td>
-                            <td>{caseItem.expectedTime}</td>
-                            <td>{caseItem.touched}</td>
-                            <td>{caseItem.touchedTimeFix}</td>
+                        {caseHistorySearch.filteredData.length === 0 ? (
+                          <tr>
                             <td
-                              className={`tl-status ${
-                                caseItem.status === "Met"
-                                  ? "tl-status--met"
-                                  : "tl-status--missed"
-                              }`}
+                              colSpan="9"
+                              style={{
+                                textAlign: "center",
+                                padding: "40px",
+                                color: "#999",
+                                fontStyle: "italic",
+                              }}
                             >
-                              {caseItem.status}
+                              No Available Data
                             </td>
                           </tr>
-                        ))}
+                        ) : (
+                          paginate(
+                            caseHistorySearch.filteredData,
+                            historyCasePage,
+                          ).map((caseItem) => (
+                            <tr
+                              key={caseItem.id}
+                              className={`tl-row ${
+                                caseItem.status === "Met"
+                                  ? "tl-row--met"
+                                  : "tl-row--missed"
+                              }`}
+                            >
+                              <td>{caseItem.date}</td>
+                              <td>{caseItem.id}</td>
+                              <td>{caseItem.agent}</td>
+                              <td>{caseItem.assignedTime}</td>
+                              <td>{caseItem.priority}</td>
+                              <td>{caseItem.expectedTime}</td>
+                              <td>{caseItem.touched}</td>
+                              <td>{caseItem.touchedTimeFix}</td>
+                              <td
+                                className={`tl-status ${
+                                  caseItem.status === "Met"
+                                    ? "tl-status--met"
+                                    : "tl-status--missed"
+                                }`}
+                              >
+                                {caseItem.status}
+                              </td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -873,6 +978,7 @@ function DashboardTeamLead({ username, onLogout }) {
                     </span>
                     <button
                       className="tl-pagination-btn"
+                      x
                       onClick={() =>
                         setHistoryCasePage((prev) =>
                           Math.min(
@@ -888,6 +994,61 @@ function DashboardTeamLead({ username, onLogout }) {
                     >
                       Next
                     </button>
+                  </div>
+                </section>
+              </>
+            ) : activeView === "notification" ? (
+              <>
+                {/* Notification view - Help Request Table */}
+                <section className="tl-tile tl-table-tile">
+                  <div className="tl-tile-header">
+                    <h2 className="tl-tile-title">Help Requests from Agents</h2>
+                  </div>
+                  <div className="tl-table-wrap">
+                    <table className="tl-table tl-table--notification">
+                      <thead>
+                        <tr>
+                          <th>Agent Name</th>
+                          <th>Case Number</th>
+                          <th>Reason</th>
+                          <th>Time Requested</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="tl-notification-agent">A. Cruz</td>
+                          <td className="tl-notification-case">CS-2041</td>
+                          <td className="tl-notification-reason">
+                            This is a test notification - Help request submitted
+                          </td>
+                          <td className="tl-notification-time">5 mins ago</td>
+                        </tr>
+                        <tr>
+                          <td className="tl-notification-agent">J. Lim</td>
+                          <td className="tl-notification-case">CS-2043</td>
+                          <td className="tl-notification-reason">
+                            Test message - Agent needs assistance
+                          </td>
+                          <td className="tl-notification-time">12 mins ago</td>
+                        </tr>
+                        <tr>
+                          <td className="tl-notification-agent">S. Tan</td>
+                          <td className="tl-notification-case">CS-2045</td>
+                          <td className="tl-notification-reason">
+                            Sample help request for testing purposes
+                          </td>
+                          <td className="tl-notification-time">18 mins ago</td>
+                        </tr>
+                        <tr>
+                          <td className="tl-notification-agent">M. Santos</td>
+                          <td className="tl-notification-case">CS-2047</td>
+                          <td className="tl-notification-reason">
+                            Test notification - Support needed
+                          </td>
+                          <td className="tl-notification-time">25 mins ago</td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </section>
               </>
@@ -1107,6 +1268,12 @@ function DashboardTeamLead({ username, onLogout }) {
                       className="tl-upload-save"
                       type="button"
                       onClick={() => {
+                        // Populate all tables with static data
+                        setCaseData(STATIC_CASE_DATA);
+                        setAgentSummaryData(STATIC_AGENT_SUMMARY);
+                        setCaseHistoryData(STATIC_CASE_HISTORY);
+                        setIsDataUploaded(true);
+
                         alert(
                           `File "${uploadedFile.name}" saved successfully!`,
                         );
