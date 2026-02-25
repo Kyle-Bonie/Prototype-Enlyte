@@ -14,8 +14,13 @@ dist/
 .env.development.local
 .env.test.local
 .env.production.local
+app/.env
 server/.env
 functions/.env
+
+# Firebase service account keys
+**/serviceAccountKey.json
+*firebase-adminsdk*.json
 
 # Firebase
 .firebase/
