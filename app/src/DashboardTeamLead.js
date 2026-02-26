@@ -46,6 +46,8 @@ function DashboardTeamLead({ username, onLogout }) {
   const [selectedNotification, setSelectedNotification] = useState(null);
   // Track read/unread status for notifications
   const [notificationReadStatus, setNotificationReadStatus] = useState({});
+  // Track if notification page has been visited in this session
+  const [notificationPageVisited, setNotificationPageVisited] = useState(false);
   // Pagination states
   const [agentSummaryPage, setAgentSummaryPage] = useState(1);
   const [caseTablePage, setCaseTablePage] = useState(1);
@@ -150,6 +152,10 @@ function DashboardTeamLead({ username, onLogout }) {
   // Sidebar navigation handler.
   const handleSelectView = (view) => {
     setActiveView(view);
+    // Mark notification page as visited when opened
+    if (view === "notification") {
+      setNotificationPageVisited(true);
+    }
   };
 
   // Page heading derived from current view.
@@ -512,7 +518,7 @@ function DashboardTeamLead({ username, onLogout }) {
         </aside>
         <main className="tl-main">
           <NotificationCarousel
-            isVisible={activeView !== "notification"}
+            isVisible={!notificationPageVisited}
             onNotificationClick={() => handleSelectView("notification")}
           />
           <div className="tl-content">
