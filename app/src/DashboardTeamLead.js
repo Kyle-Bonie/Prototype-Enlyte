@@ -1,6 +1,7 @@
 import { useState } from "react";
 import ApricusLogo from "./assets/ApricusLogo.png";
 import SearchBar from "./components/SearchBar";
+import HelpRequestDetail from "./components/HelpRequestDetail";
 import DashboardTeamLeadCharts, {
   PieChart,
   TATColumnChart,
@@ -41,6 +42,10 @@ function DashboardTeamLead({ username, onLogout }) {
   // Assign Case modal state.
   const [isAssignOpen, setIsAssignOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState("");
+  // Selected notification row for detail panel.
+  const [selectedNotification, setSelectedNotification] = useState(null);
+  // Track read/unread status for notifications
+  const [notificationReadStatus, setNotificationReadStatus] = useState({});
   // Pagination states
   const [agentSummaryPage, setAgentSummaryPage] = useState(1);
   const [caseTablePage, setCaseTablePage] = useState(1);
@@ -50,6 +55,38 @@ function DashboardTeamLead({ username, onLogout }) {
   const itemsPerPage = 5;
   // Case data state - starts empty until file is uploaded
   const [caseData, setCaseData] = useState([]);
+
+  // Static notification / help request data
+  const STATIC_NOTIFICATIONS = [
+    {
+      id: 1,
+      agent: "A. Cruz",
+      caseNumber: "CS-2041",
+      reason: "This is a test notification - Help request submitted",
+      time: "5 mins ago",
+    },
+    {
+      id: 2,
+      agent: "J. Lim",
+      caseNumber: "CS-2043",
+      reason: "Test message - Agent needs assistance with document review",
+      time: "12 mins ago",
+    },
+    {
+      id: 3,
+      agent: "S. Tan",
+      caseNumber: "CS-2045",
+      reason: "Sample help request for testing purposes",
+      time: "18 mins ago",
+    },
+    {
+      id: 4,
+      agent: "M. Santos",
+      caseNumber: "CS-2047",
+      reason: "Test notification - Support needed for urgent case",
+      time: "25 mins ago",
+    },
+  ];
 
   // Static data to populate when file is uploaded
   const STATIC_CASE_DATA = [
@@ -375,6 +412,19 @@ function DashboardTeamLead({ username, onLogout }) {
   const handleCloseAssign = () => {
     setIsAssignOpen(false);
     setSelectedAgent("");
+  };
+
+  const handleNotificationClick = (notif) => {
+    // Mark as read when clicked
+    setNotificationReadStatus((prev) => ({
+      ...prev,
+      [notif.id]: true,
+    }));
+
+    // Toggle selection (close if already selected)
+    setSelectedNotification(
+      selectedNotification?.id === notif.id ? null : notif
+    );
   };
 
   const handleAssignConfirm = () => {
@@ -1015,42 +1065,38 @@ function DashboardTeamLead({ username, onLogout }) {
                         </tr>
                       </thead>
                       <tbody>
-                        <tr>
-                          <td className="tl-notification-agent">A. Cruz</td>
-                          <td className="tl-notification-case">CS-2041</td>
-                          <td className="tl-notification-reason">
-                            This is a test notification - Help request submitted
-                          </td>
-                          <td className="tl-notification-time">5 mins ago</td>
-                        </tr>
-                        <tr>
-                          <td className="tl-notification-agent">J. Lim</td>
-                          <td className="tl-notification-case">CS-2043</td>
-                          <td className="tl-notification-reason">
-                            Test message - Agent needs assistance
-                          </td>
-                          <td className="tl-notification-time">12 mins ago</td>
-                        </tr>
-                        <tr>
-                          <td className="tl-notification-agent">S. Tan</td>
-                          <td className="tl-notification-case">CS-2045</td>
-                          <td className="tl-notification-reason">
-                            Sample help request for testing purposes
-                          </td>
-                          <td className="tl-notification-time">18 mins ago</td>
-                        </tr>
-                        <tr>
-                          <td className="tl-notification-agent">M. Santos</td>
-                          <td className="tl-notification-case">CS-2047</td>
-                          <td className="tl-notification-reason">
-                            Test notification - Support needed
-                          </td>
-                          <td className="tl-notification-time">25 mins ago</td>
-                        </tr>
+                        {STATIC_NOTIFICATIONS.map((notif) => {
+                          const isRead = notificationReadStatus[notif.id];
+                          const isActive = selectedNotification?.id === notif.id;
+                          return (
+                            <tr
+                              key={notif.id}
+                              className={`tl-notif-row${isActive ? " tl-notif-row--active" : ""}${!isRead ? " tl-notif-row--unread" : ""}`}
+                              onClick={() => handleNotificationClick(notif)}
+                              style={{ cursor: "pointer" }}
+                            >
+                              <td className="tl-notification-agent">
+                                {!isRead && <span className="tl-unread-indicator" aria-label="Unread">●</span>}
+                                {notif.agent}
+                              </td>
+                              <td className="tl-notification-case">{notif.caseNumber}</td>
+                              <td className="tl-notification-reason">{notif.reason}</td>
+                              <td className="tl-notification-time">{notif.time}</td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
                 </section>
+                {/* Help Request Detail Panel */}
+                {selectedNotification && (
+                  <HelpRequestDetail
+                    request={selectedNotification}
+                    agents={availableAgents}
+                    onClose={() => setSelectedNotification(null)}
+                  />
+                )}
               </>
             ) : (
               <>
@@ -1350,6 +1396,6 @@ function DashboardTeamLead({ username, onLogout }) {
       ) : null}
     </div>
   );
-}
+};
 
 export default DashboardTeamLead;

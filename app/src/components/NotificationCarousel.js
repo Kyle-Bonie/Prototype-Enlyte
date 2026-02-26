@@ -47,7 +47,7 @@ function NotificationCarousel({ isVisible = true, onNotificationClick }) {
   }, [notifications.length, resetKey]);
 
   const handlePrevious = () => {
-    setCurrentIndex((prev) =>
+    setCurrentIndex((prev) =>                         
       prev === 0 ? notifications.length - 1 : prev - 1,
     );
     setResetKey((prev) => prev + 1);
