@@ -1,13 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./LoginPage.css";
 import apricusLogo from "./assets/ApricusLogo.png";
 import { authAPI } from "./api/apiClient";
+import { seedDemoUsers } from "./api/usersAPI";
 
 function LoginPage({ onLoginSuccess }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+
+  // Ensure demo users exist in Firestore on first load
+  useEffect(() => {
+    seedDemoUsers().catch((err) =>
+      console.warn("Could not seed demo users:", err)
+    );
+  }, []);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 

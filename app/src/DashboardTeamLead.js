@@ -1,13 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ApricusLogo from "./assets/ApricusLogo.png";
 import SearchBar from "./components/SearchBar";
 import HelpRequestDetail from "./components/HelpRequestDetail";
-import DashboardTeamLeadCharts, {
-  PieChart,
-  TATColumnChart,
-} from "./components/DashboardTeamLeadCharts";
+import { PieChart, TATColumnChart } from "./components/DashboardTeamLeadCharts";
 import NotificationCarousel from "./components/NotificationCarousel";
 import useSearch from "./hooks/useSearch";
+import {
+  getAllUsers,
+  createUser,
+  updateUser,
+  deleteUser,
+} from "./api/usersAPI";
 import "./DashboardTeamLead.css";
 
 function DashboardTeamLead({ username, onLogout }) {
@@ -21,19 +24,17 @@ function DashboardTeamLead({ username, onLogout }) {
   const [uploadedFile, setUploadedFile] = useState(null);
   // Track drag state for visual feedback.
   const [isDragging, setIsDragging] = useState(false);
-  // Track if data has been uploaded (controls table visibility)
-  const [isDataUploaded, setIsDataUploaded] = useState(false);
   // Manage User data list.
-  const [users, setUsers] = useState([
-    { id: 1, name: "A. Cruz", role: "Agent", status: "Active" },
-    { id: 2, name: "J. Lim", role: "Agent", status: "Active" },
-    { id: 3, name: "S. Tan", role: "Team Lead", status: "Inactive" },
-  ]);
+  const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersError, setUsersError] = useState("");
   // Manage User form state.
   const [userForm, setUserForm] = useState({
     name: "",
+    username: "",
+    password: "",
+    employeeNumber: "",
     role: "Agent",
-    status: "Active",
   });
   // Manage User edit state.
   const [editingUserId, setEditingUserId] = useState(null);
@@ -149,6 +150,24 @@ function DashboardTeamLead({ username, onLogout }) {
     },
   ];
 
+  // Load users from Firestore on mount
+  useEffect(() => {
+    const loadUsers = async () => {
+      setUsersLoading(true);
+      setUsersError("");
+      try {
+        const data = await getAllUsers();
+        setUsers(data);
+      } catch (err) {
+        setUsersError("Failed to load users.");
+        console.error(err);
+      } finally {
+        setUsersLoading(false);
+      }
+    };
+    loadUsers();
+  }, []);
+
   // Sidebar navigation handler.
   const handleSelectView = (view) => {
     setActiveView(view);
@@ -229,58 +248,75 @@ function DashboardTeamLead({ username, onLogout }) {
   };
 
   // Create or update a user.
-  const handleSaveUser = (event) => {
+  const handleSaveUser = async (event) => {
     event.preventDefault();
     const trimmedName = userForm.name.trim();
-    if (!trimmedName) {
-      return;
-    }
+    const trimmedUsername = userForm.username.trim();
+    const trimmedEmployeeNumber = userForm.employeeNumber.trim();
+    if (!trimmedName || !trimmedUsername || !trimmedEmployeeNumber) return;
+    if (!editingUserId && !userForm.password.trim()) return;
 
-    if (editingUserId) {
-      setUsers((prev) =>
-        prev.map((user) =>
-          user.id === editingUserId
-            ? { ...user, ...userForm, name: trimmedName }
-            : user,
-        ),
-      );
-    } else {
-      setUsers((prev) => {
-        const nextId = Math.max(0, ...prev.map((user) => user.id)) + 1;
-        return [
-          ...prev,
-          {
-            id: nextId,
-            name: trimmedName,
-            role: userForm.role,
-            status: userForm.status,
-          },
-        ];
-      });
+    setUsersError("");
+    try {
+      if (editingUserId) {
+        const updateData = {
+          name: trimmedName,
+          username: trimmedUsername,
+          employeeNumber: trimmedEmployeeNumber,
+          role: userForm.role,
+        };
+        if (userForm.password.trim()) {
+          updateData.password = userForm.password.trim();
+        }
+        await updateUser(editingUserId, updateData);
+      } else {
+        await createUser({
+          name: trimmedName,
+          username: trimmedUsername,
+          password: userForm.password.trim(),
+          employeeNumber: trimmedEmployeeNumber,
+          role: userForm.role,
+        });
+      }
+      const refreshed = await getAllUsers();
+      setUsers(refreshed);
+      setUserForm({ name: "", username: "", password: "", employeeNumber: "", role: "Agent" });
+      setEditingUserId(null);
+    } catch (err) {
+      setUsersError(err.message || "Failed to save user.");
     }
-
-    setUserForm({ name: "", role: "Agent", status: "Active" });
-    setEditingUserId(null);
   };
 
   // Populate form for editing.
   const handleEditUser = (user) => {
-    setUserForm({ name: user.name, role: user.role, status: user.status });
+    setUserForm({
+      name: user.name,
+      username: user.username,
+      password: "",
+      employeeNumber: user.employeeNumber || "",
+      role: user.role,
+    });
     setEditingUserId(user.id);
   };
 
   // Remove a user row.
-  const handleDeleteUser = (userId) => {
-    setUsers((prev) => prev.filter((user) => user.id !== userId));
-    if (editingUserId === userId) {
-      setEditingUserId(null);
-      setUserForm({ name: "", role: "Agent", status: "Active" });
+  const handleDeleteUser = async (userId) => {
+    setUsersError("");
+    try {
+      await deleteUser(userId);
+      setUsers((prev) => prev.filter((u) => u.id !== userId));
+      if (editingUserId === userId) {
+        setEditingUserId(null);
+        setUserForm({ name: "", username: "", password: "", employeeNumber: "", role: "Agent" });
+      }
+    } catch (err) {
+      setUsersError("Failed to delete user.");
     }
   };
 
   const handleCancelEdit = () => {
     setEditingUserId(null);
-    setUserForm({ name: "", role: "Agent", status: "Active" });
+    setUserForm({ name: "", username: "", password: "", employeeNumber: "", role: "Agent" });
   };
 
   const handleCaseToggle = (caseId) => {
@@ -1112,7 +1148,22 @@ function DashboardTeamLead({ username, onLogout }) {
                     <h2 className="tl-tile-title">Manage User</h2>
                   </div>
                   <form className="tl-user-form" onSubmit={handleSaveUser}>
+                    {usersError && (
+                      <p style={{ color: "#dc2626", fontSize: "13px", margin: "0 0 8px" }}>{usersError}</p>
+                    )}
                     <div className="tl-form-grid">
+                      <label className="tl-form-field">
+                        <span className="tl-form-label">Employee Number</span>
+                        <input
+                          className="tl-form-input"
+                          type="text"
+                          name="employeeNumber"
+                          value={userForm.employeeNumber}
+                          onChange={handleUserFieldChange}
+                          placeholder="e.g. EMP-003"
+                          required
+                        />
+                      </label>
                       <label className="tl-form-field">
                         <span className="tl-form-label">Name</span>
                         <input
@@ -1121,7 +1172,34 @@ function DashboardTeamLead({ username, onLogout }) {
                           name="name"
                           value={userForm.name}
                           onChange={handleUserFieldChange}
-                          placeholder="Enter name"
+                          placeholder="Enter full name"
+                          required
+                        />
+                      </label>
+                      <label className="tl-form-field">
+                        <span className="tl-form-label">Username</span>
+                        <input
+                          className="tl-form-input"
+                          type="text"
+                          name="username"
+                          value={userForm.username}
+                          onChange={handleUserFieldChange}
+                          placeholder="Enter username"
+                          required
+                        />
+                      </label>
+                      <label className="tl-form-field">
+                        <span className="tl-form-label">
+                          {editingUserId ? "New Password (leave blank to keep)" : "Password"}
+                        </span>
+                        <input
+                          className="tl-form-input"
+                          type="password"
+                          name="password"
+                          value={userForm.password}
+                          onChange={handleUserFieldChange}
+                          placeholder={editingUserId ? "Leave blank to keep current" : "Enter password"}
+                          required={!editingUserId}
                         />
                       </label>
                       <label className="tl-form-field">
@@ -1134,18 +1212,6 @@ function DashboardTeamLead({ username, onLogout }) {
                         >
                           <option value="Agent">Agent</option>
                           <option value="Team Lead">Team Lead</option>
-                        </select>
-                      </label>
-                      <label className="tl-form-field">
-                        <span className="tl-form-label">Status</span>
-                        <select
-                          className="tl-form-input"
-                          name="status"
-                          value={userForm.status}
-                          onChange={handleUserFieldChange}
-                        >
-                          <option value="Active">Active</option>
-                          <option value="Inactive">Inactive</option>
                         </select>
                       </label>
                     </div>
@@ -1173,48 +1239,54 @@ function DashboardTeamLead({ username, onLogout }) {
                     <table className="tl-table tl-table--manage">
                       <thead>
                         <tr>
+                          <th>Emp. No.</th>
                           <th>Name</th>
+                          <th>Username</th>
                           <th>Role</th>
-                          <th>Status</th>
                           <th>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {paginate(users, manageUserPage).map((user) => (
-                          <tr key={user.id}>
-                            <td>{user.name}</td>
-                            <td>{user.role}</td>
-                            <td>
-                              <span
-                                className={`tl-pill ${
-                                  user.status === "Active"
-                                    ? "tl-pill--active"
-                                    : "tl-pill--inactive"
-                                }`}
-                              >
-                                {user.status}
-                              </span>
-                            </td>
-                            <td>
-                              <div className="tl-action-buttons">
-                                <button
-                                  className="tl-link"
-                                  type="button"
-                                  onClick={() => handleEditUser(user)}
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  className="tl-link tl-link--danger"
-                                  type="button"
-                                  onClick={() => handleDeleteUser(user.id)}
-                                >
-                                  Delete
-                                </button>
-                              </div>
+                        {usersLoading ? (
+                          <tr>
+                            <td colSpan="5" style={{ textAlign: "center", padding: "30px", color: "#999" }}>
+                              Loading users...
                             </td>
                           </tr>
-                        ))}
+                        ) : users.length === 0 ? (
+                          <tr>
+                            <td colSpan="5" style={{ textAlign: "center", padding: "30px", color: "#999", fontStyle: "italic" }}>
+                              No users found
+                            </td>
+                          </tr>
+                        ) : (
+                          paginate(users, manageUserPage).map((user) => (
+                            <tr key={user.id}>
+                              <td>{user.employeeNumber}</td>
+                              <td>{user.name}</td>
+                              <td>{user.username}</td>
+                              <td>{user.role}</td>
+                              <td>
+                                <div className="tl-action-buttons">
+                                  <button
+                                    className="tl-link"
+                                    type="button"
+                                    onClick={() => handleEditUser(user)}
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    className="tl-link tl-link--danger"
+                                    type="button"
+                                    onClick={() => handleDeleteUser(user.id)}
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -1324,7 +1396,6 @@ function DashboardTeamLead({ username, onLogout }) {
                         setCaseData(STATIC_CASE_DATA);
                         setAgentSummaryData(STATIC_AGENT_SUMMARY);
                         setCaseHistoryData(STATIC_CASE_HISTORY);
-                        setIsDataUploaded(true);
 
                         alert(
                           `File "${uploadedFile.name}" saved successfully!`,
