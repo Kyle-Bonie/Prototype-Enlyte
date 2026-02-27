@@ -5,8 +5,8 @@ class User {
     this.username = data.username;
     this.password = data.password;
     this.name = data.name;
+    this.employeeNumber = data.employeeNumber || "";
     this.role = data.role; // 'Agent' or 'Team Lead'
-    this.status = data.status || "Active";
     this.createdAt = data.createdAt || new Date();
   }
 

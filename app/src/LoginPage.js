@@ -1,21 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./LoginPage.css";
 import apricusLogo from "./assets/ApricusLogo.png";
 import { authAPI } from "./api/apiClient";
-import { seedDemoUsers } from "./api/usersAPI";
 
 function LoginPage({ onLoginSuccess }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-
-  // Ensure demo users exist in Firestore on first load
-  useEffect(() => {
-    seedDemoUsers().catch((err) =>
-      console.warn("Could not seed demo users:", err)
-    );
-  }, []);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -25,31 +17,20 @@ function LoginPage({ onLoginSuccess }) {
     setIsLoading(true);
 
     try {
-      // Call backend API
       const data = await authAPI.login(username, password);
 
-      if (data.success) {
-        // Store token and user data
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
+      onLoginSuccess({
+        username: data.user.username,
+        role: data.user.role === "Agent" ? "agent" : "teamLead",
+      });
 
-        // Call parent login handler
-        onLoginSuccess({
-          username: data.user.username,
-          role: data.user.role === "Agent" ? "agent" : "teamLead",
-        });
-
-        // Navigate based on role
-        if (data.user.role === "Agent") {
-          navigate("/agent");
-        } else if (data.user.role === "Team Lead") {
-          navigate("/team-lead");
-        }
+      if (data.user.role === "Agent") {
+        navigate("/agent");
       } else {
-        setError(data.error || "Login failed");
+        navigate("/team-lead");
       }
     } catch (err) {
-      setError(err.message || "Network error. Please try again.");
+      setError(err.message || "Invalid username or password.");
     } finally {
       setIsLoading(false);
     }

@@ -1,21 +1,14 @@
-// API Client for backend communication
+// API Client — direct Firestore login
 import { db } from "../firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 
-// Helper function to get auth token
-const getAuthToken = () => {
-  return localStorage.getItem("token");
-};
-
-// Auth API calls
 export const authAPI = {
-  // Login user — queries Firestore users collection
+  // Login: query Firestore by username, compare password
   login: async (username, password) => {
     const q = query(
       collection(db, "users"),
       where("username", "==", username)
     );
-
     const snapshot = await getDocs(q);
 
     if (snapshot.empty) {
@@ -29,12 +22,8 @@ export const authAPI = {
       throw new Error("Invalid username or password.");
     }
 
-    // Create a simple session token
-    const token = btoa(JSON.stringify({ userId: user.id, role: user.role }));
-
     return {
       success: true,
-      token,
       user: {
         id: user.id,
         username: user.username,
@@ -44,28 +33,7 @@ export const authAPI = {
     };
   },
 
-
-  // Get current user from stored token
-  getCurrentUser: async () => {
-    const token = getAuthToken();
-    if (!token) {
-      return Promise.reject(new Error("No token found"));
-    }
-    try {
-      const decoded = JSON.parse(atob(token));
-      return { user: decoded };
-    } catch {
-      return { user: null };
-    }
-  },
-
-  // Logout user
-  logout: async () => {
-    return Promise.resolve({ success: true });
-  },
+  logout: async () => ({ success: true }),
 };
-
-// Export for backward compatibility
-export const login = authAPI.login;
 
 export default authAPI;

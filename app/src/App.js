@@ -27,14 +27,10 @@ function AppRoutes({ user, setUser }) {
 
   const handleLogout = async () => {
     try {
-      // Call backend logout (optional, since JWT is stateless)
       await authAPI.logout();
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
-      // Clear local storage and user state
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
       setUser(null);
       navigate("/");
     }
