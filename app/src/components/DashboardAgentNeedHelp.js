@@ -1,23 +1,33 @@
 import { useState } from "react";
 
-function DashboardAgentNeedHelp({ isOpen, onClose, caseData }) {
+function DashboardAgentNeedHelp({ isOpen, onClose, caseData, onSubmit }) {
   const [selectedHelpCase, setSelectedHelpCase] = useState("");
   const [helpReason, setHelpReason] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selectedHelpCase || !helpReason.trim()) {
-      alert("Please select a case and provide a reason.");
+      setError("Please select a case and provide a reason.");
       return;
     }
-    alert(
-      `Help request submitted for case ${selectedHelpCase}\nReason: ${helpReason}`,
-    );
-    handleClose();
+    setError("");
+    setLoading(true);
+    try {
+      await onSubmit({ caseId: selectedHelpCase, reason: helpReason.trim() });
+      alert(`Help request submitted for case ${selectedHelpCase}`);
+      handleClose();
+    } catch (err) {
+      setError("Failed to submit. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleClose = () => {
     setSelectedHelpCase("");
     setHelpReason("");
+    setError("");
     onClose();
   };
 
@@ -40,6 +50,9 @@ function DashboardAgentNeedHelp({ isOpen, onClose, caseData }) {
           <p className="tl-assign-text">
             Select a case and provide a reason for assistance.
           </p>
+          {error ? (
+            <p style={{ color: "#dc2626", fontSize: "13px", margin: "0 0 8px" }}>{error}</p>
+          ) : null}
           <label className="tl-assign-field">
             <span className="tl-assign-label">Select case:</span>
             <select
@@ -50,11 +63,15 @@ function DashboardAgentNeedHelp({ isOpen, onClose, caseData }) {
               <option value="" disabled>
                 Select a case
               </option>
-              {caseData.map((caseItem) => (
-                <option key={caseItem.id} value={caseItem.id}>
-                  {caseItem.id} - {caseItem.priority}
-                </option>
-              ))}
+              {caseData.length === 0 ? (
+                <option value="" disabled>No cases available</option>
+              ) : (
+                caseData.map((caseItem) => (
+                  <option key={caseItem.firestoreId || caseItem.id} value={caseItem.id}>
+                    {caseItem.id}{caseItem.priority ? ` - ${caseItem.priority}` : ""}
+                  </option>
+                ))
+              )}
             </select>
           </label>
           <label className="tl-assign-field">
@@ -73,8 +90,8 @@ function DashboardAgentNeedHelp({ isOpen, onClose, caseData }) {
             />
           </label>
           <div className="tl-assign-actions">
-            <button className="tl-primary" type="button" onClick={handleSubmit}>
-              Submit
+            <button className="tl-primary" type="button" onClick={handleSubmit} disabled={loading}>
+              {loading ? "Submitting..." : "Submit"}
             </button>
             <button
               className="tl-secondary"

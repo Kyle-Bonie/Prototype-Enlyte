@@ -80,6 +80,18 @@ export const clearAllCases = async () => {
   await batch.commit();
 };
 
+// Submit a help request from an agent
+export const submitHelpRequest = async ({ caseId, reason, agentUsername }) => {
+  const ref = doc(collection(db, "helpRequests"));
+  await setDoc(ref, {
+    caseId,
+    reason,
+    agentUsername,
+    status: "pending",
+    createdAt: serverTimestamp(),
+  });
+};
+
 // Batch-update the agent field (and _raw mirror) for a set of cases
 // updates: [{ firestoreId, agentValue, updatedRaw }]
 export const updateCasesAgent = async (updates) => {

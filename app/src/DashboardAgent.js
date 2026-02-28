@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import ApricusLogo from "./assets/ApricusLogo.png";
 import DashboardAgentNeedHelp from "./components/DashboardAgentNeedHelp";
+import { getAllCases, submitHelpRequest } from "./api/casesAPI";
 import "./DashboardAgent.css";
 
 function DashboardAgent({ username, onLogout }) {
@@ -14,6 +15,13 @@ function DashboardAgent({ username, onLogout }) {
   const [caseStatuses, setCaseStatuses] = useState({});
   const [isNeedHelpOpen, setIsNeedHelpOpen] = useState(false);
   const [dateRange, setDateRange] = useState("today");
+  // Cases loaded from Firestore
+  const [firestoreCases, setFirestoreCases] = useState([]);
+
+  // Load cases from Firestore on mount
+  useEffect(() => {
+    getAllCases().then(({ cases }) => setFirestoreCases(cases)).catch(() => {});
+  }, []);
 
   // Helper function to calculate date ranges
   const getDateRange = (range) => {
@@ -593,7 +601,10 @@ function DashboardAgent({ username, onLogout }) {
       <DashboardAgentNeedHelp
         isOpen={isNeedHelpOpen}
         onClose={() => setIsNeedHelpOpen(false)}
-        caseData={caseData}
+        caseData={firestoreCases}
+        onSubmit={async ({ caseId, reason }) => {
+          await submitHelpRequest({ caseId, reason, agentUsername: username });
+        }}
       />
       {showToast ? (
         <div className="agent-toast">
