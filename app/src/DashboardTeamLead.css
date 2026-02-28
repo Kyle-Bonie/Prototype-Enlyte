@@ -35,7 +35,6 @@
   grid-template-columns: 1fr;
   min-height: calc(100vh - 56px);
   align-items: stretch;
-  height: 100%;
   padding-top: 56px;
   padding-left: 230px;
 }
@@ -114,15 +113,18 @@
   background: #ffffff;
   padding: 24px 48px 24px 32px;
   min-height: calc(100vh - 56px);
-  height: 100%;
+  overflow-x: hidden;
+  min-width: 0;
 }
 
 .tl-content {
   width: 100%;
-  height: 100%;
+  max-width: 100%;
   background: #f7f7fb;
   border-radius: 8px;
   padding: 24px;
+  overflow-x: hidden;
+  min-width: 0;
 }
 
 .tl-tiles {
@@ -266,10 +268,13 @@
 
 .tl-table-wrap {
   width: 100%;
+  max-width: 100%;
   overflow-x: auto;
   border-radius: 0 0 10px 10px;
   border: 1px solid #e2e8f0;
   border-top: none;
+  /* Enable smooth horizontal scroll on touch/trackpad */
+  -webkit-overflow-scrolling: touch;
 }
 
 .tl-table {

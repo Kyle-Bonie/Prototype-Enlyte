@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import ApricusLogo from "./assets/ApricusLogo.png";
 import SearchBar from "./components/SearchBar";
 import HelpRequestDetail from "./components/HelpRequestDetail";
@@ -11,6 +11,8 @@ import {
   updateUser,
   deleteUser,
 } from "./api/usersAPI";
+import { uploadCases, getAllCases, updateCasesAgent } from "./api/casesAPI";
+import { parseExcelFile, deriveAgentSummary, HEADER_MAP, normalise } from "./utils/excelParser";
 import "./DashboardTeamLead.css";
 
 function DashboardTeamLead({ username, onLogout }) {
@@ -24,6 +26,10 @@ function DashboardTeamLead({ username, onLogout }) {
   const [uploadedFile, setUploadedFile] = useState(null);
   // Track drag state for visual feedback.
   const [isDragging, setIsDragging] = useState(false);
+  // Excel upload processing state.
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [casesLoading, setCasesLoading] = useState(false);
+  const [casesError, setCasesError] = useState("");
   // Manage User data list.
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
@@ -55,9 +61,11 @@ function DashboardTeamLead({ username, onLogout }) {
   const [historyAgentPage, setHistoryAgentPage] = useState(1);
   const [historyCasePage, setHistoryCasePage] = useState(1);
   const [manageUserPage, setManageUserPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
   // Case data state - starts empty until file is uploaded
   const [caseData, setCaseData] = useState([]);
+  // Column headers derived from the uploaded Excel file
+  const [caseHeaders, setCaseHeaders] = useState([]);
 
   // Static notification / help request data
   const STATIC_NOTIFICATIONS = [
@@ -91,65 +99,6 @@ function DashboardTeamLead({ username, onLogout }) {
     },
   ];
 
-  // Static data to populate when file is uploaded
-  const STATIC_CASE_DATA = [
-    {
-      id: "CS-1042",
-      date: "01/28/2026",
-      agent: "A. Cruz",
-      assignedTime: "09:00",
-      priority: "Urgent",
-      expectedTime: "13:00",
-      touched: "12:20",
-      touchedTimeFix: "12:30",
-      status: "Met",
-    },
-    {
-      id: "CS-1043",
-      date: "01/28/2026",
-      agent: "J. Lim",
-      assignedTime: "09:00",
-      priority: "Standard",
-      expectedTime: "15:00",
-      touched: "15:30",
-      touchedTimeFix: "15:45",
-      status: "Not Met",
-    },
-    {
-      id: "CS-1044",
-      date: "01/28/2026",
-      agent: "S. Tan",
-      assignedTime: "09:00",
-      priority: "Standard",
-      expectedTime: "16:00",
-      touched: "14:10",
-      touchedTimeFix: "14:20",
-      status: "Met",
-    },
-    {
-      id: "CS-1045",
-      date: "01/28/2026",
-      agent: "",
-      assignedTime: "",
-      priority: "Standard",
-      expectedTime: "17:00",
-      touched: "",
-      touchedTimeFix: "",
-      status: "Not Met",
-    },
-    {
-      id: "CS-1046",
-      date: "01/28/2026",
-      agent: "",
-      assignedTime: "",
-      priority: "Urgent",
-      expectedTime: "18:00",
-      touched: "",
-      touchedTimeFix: "",
-      status: "Not Met",
-    },
-  ];
-
   // Load users from Firestore on mount
   useEffect(() => {
     const loadUsers = async () => {
@@ -166,6 +115,28 @@ function DashboardTeamLead({ username, onLogout }) {
       }
     };
     loadUsers();
+  }, []);
+
+  // Load cases from Firestore on mount
+  useEffect(() => {
+    const loadCases = async () => {
+      setCasesLoading(true);
+      setCasesError("");
+      try {
+        const { cases: data, headers } = await getAllCases();
+        if (data.length > 0) {
+          setCaseData(data);
+          setCaseHistoryData(data);
+          setCaseHeaders(headers);
+        }
+      } catch (err) {
+        setCasesError("Failed to load cases.");
+        console.error(err);
+      } finally {
+        setCasesLoading(false);
+      }
+    };
+    loadCases();
   }, []);
 
   // Sidebar navigation handler.
@@ -338,91 +309,11 @@ function DashboardTeamLead({ username, onLogout }) {
 
   const totalPages = (items) => Math.ceil(items.length / itemsPerPage);
 
-  // Agent summary data (for both Case Summary and Case History views) - starts empty
-  const [agentSummaryData, setAgentSummaryData] = useState([]);
+  // Agent summary: auto-derived from current case data
+  const agentSummaryData = useMemo(() => deriveAgentSummary(caseData), [caseData]);
 
-  // Static agent summary data to populate on upload
-  const STATIC_AGENT_SUMMARY = [
-    { name: "A. Cruz", assigned: 14, urgent: 3, intake: 6, total: 23 },
-    { name: "J. Lim", assigned: 11, urgent: 2, intake: 7, total: 20 },
-    { name: "S. Tan", assigned: 9, urgent: 1, intake: 5, total: 15 },
-    { name: "M. Santos", assigned: 12, urgent: 4, intake: 8, total: 24 },
-    { name: "R. Garcia", assigned: 10, urgent: 2, intake: 6, total: 18 },
-    { name: "L. Reyes", assigned: 8, urgent: 1, intake: 4, total: 13 },
-  ];
-
-  // Case history data - starts empty
+  // Case history data - all historical cases from Firestore
   const [caseHistoryData, setCaseHistoryData] = useState([]);
-
-  // Static case history data to populate on upload
-  const STATIC_CASE_HISTORY = [
-    {
-      id: "CS-1001",
-      date: "01/20/2026",
-      agent: "A. Cruz",
-      assignedTime: "09:00",
-      priority: "Urgent",
-      expectedTime: "13:00",
-      touched: "12:00",
-      touchedTimeFix: "12:15",
-      status: "Met",
-    },
-    {
-      id: "CS-1002",
-      date: "01/20/2026",
-      agent: "J. Lim",
-      assignedTime: "09:00",
-      priority: "Standard",
-      expectedTime: "15:00",
-      touched: "16:00",
-      touchedTimeFix: "16:10",
-      status: "Not Met",
-    },
-    {
-      id: "CS-1003",
-      date: "01/21/2026",
-      agent: "S. Tan",
-      assignedTime: "09:00",
-      priority: "Standard",
-      expectedTime: "16:00",
-      touched: "14:30",
-      touchedTimeFix: "14:45",
-      status: "Met",
-    },
-    {
-      id: "CS-1004",
-      date: "01/21/2026",
-      agent: "A. Cruz",
-      assignedTime: "09:00",
-      priority: "Urgent",
-      expectedTime: "13:00",
-      touched: "12:30",
-      touchedTimeFix: "12:40",
-      status: "Met",
-    },
-    {
-      id: "CS-1005",
-      date: "01/22/2026",
-      agent: "J. Lim",
-      assignedTime: "09:00",
-      priority: "Standard",
-      expectedTime: "15:00",
-      touched: "15:20",
-      touchedTimeFix: "15:35",
-      status: "Not Met",
-    },
-    {
-      id: "CS-1006",
-      date: "01/22/2026",
-      agent: "M. Santos",
-      assignedTime: "09:00",
-      priority: "Urgent",
-      expectedTime: "13:00",
-      touched: "11:45",
-      touchedTimeFix: "12:00",
-      status: "Met",
-    },
-  ];
 
   // Search hooks for filtering data
   const caseSearch = useSearch(
@@ -469,27 +360,49 @@ function DashboardTeamLead({ username, onLogout }) {
     );
   };
 
-  const handleAssignConfirm = () => {
-    if (!selectedAgent) {
+  const handleAssignConfirm = async () => {
+    if (!selectedAgent) return;
+
+    // Find the original Excel header string that maps to the "agent" field
+    const agentHeaderKey =
+      caseHeaders.find((h) => HEADER_MAP[normalise(h)] === "agent") || "Agent";
+
+    // Collect selected case objects
+    const selectedCaseItems = caseData.filter((c) => selectedCases[c.id]);
+
+    if (selectedCaseItems.length === 0) {
+      handleCloseAssign();
       return;
     }
 
-    // Update assigned cases with agent and complete data, but keep as "Not Met"
-    setCaseData((prev) =>
-      prev.map((caseItem) => {
-        if (selectedCases[caseItem.id]) {
-          return {
-            ...caseItem,
-            agent: selectedAgent,
-            assignedTime: "09:00",
-            touched: "15:30",
-            touchedTimeFix: "15:45",
-            status: "Not Met",
-          };
-        }
-        return caseItem;
-      }),
-    );
+    // Build Firestore batch update payload
+    const updates = selectedCaseItems.map((c) => ({
+      firestoreId: c.firestoreId,
+      agentValue: selectedAgent,
+      updatedRaw: { ...(c._raw || {}), [agentHeaderKey]: selectedAgent },
+    }));
+
+    try {
+      await updateCasesAgent(updates);
+    } catch (err) {
+      console.error("Failed to assign cases:", err);
+      alert("Failed to assign cases. Please try again.");
+      return;
+    }
+
+    // Mirror the change in local state so the table updates immediately
+    const applyUpdate = (list) =>
+      list.map((c) => {
+        if (!selectedCases[c.id]) return c;
+        return {
+          ...c,
+          agent: selectedAgent,
+          _raw: { ...(c._raw || {}), [agentHeaderKey]: selectedAgent },
+        };
+      });
+
+    setCaseData((prev) => applyUpdate(prev));
+    setCaseHistoryData((prev) => applyUpdate(prev));
 
     alert("Case/s is successfully assigned.");
     setSelectedCases({});
@@ -563,6 +476,9 @@ function DashboardTeamLead({ username, onLogout }) {
             {/* Case Summary view */}
             {activeView === "summary" ? (
               <>
+                {casesError ? (
+                  <p style={{ color: "#ef4444", marginBottom: "12px" }}>{casesError}</p>
+                ) : null}
                 {/* First row: Upload Excel tile */}
                 <div className="tl-tiles">
                   <section className="tl-tile">
@@ -583,6 +499,7 @@ function DashboardTeamLead({ username, onLogout }) {
                 <div className="tl-tiles">
                   {/* TAT Column Chart */}
                   <section className="tl-tile">
+                    {casesLoading ? <p style={{ color: "#999", fontStyle: "italic", padding: "16px" }}>Loading cases...</p> : null}
                     <div className="tl-tile-header">
                       <h2 className="tl-tile-title">
                         Met and Not Met Cases Count
@@ -741,22 +658,16 @@ function DashboardTeamLead({ username, onLogout }) {
                       <thead>
                         <tr>
                           <th aria-label="Select" />
-                          <th>Date</th>
-                          <th>Case Number</th>
-                          <th>Agent</th>
-                          <th>Assigned Time (9AM) EST</th>
-                          <th>Priority</th>
-                          <th>EXCPECTED TIME (EST)</th>
-                          <th>Touched (EST)</th>
-                          <th>Touched Time Fix (EST)</th>
-                          <th>Met/Not Met TAT</th>
+                          {caseHeaders.map((header) => (
+                            <th key={header}>{header}</th>
+                          ))}
                         </tr>
                       </thead>
                       <tbody>
                         {caseSearch.filteredData.length === 0 ? (
                           <tr>
                             <td
-                              colSpan="10"
+                              colSpan={caseHeaders.length + 1 || 10}
                               style={{
                                 textAlign: "center",
                                 padding: "40px",
@@ -771,7 +682,7 @@ function DashboardTeamLead({ username, onLogout }) {
                           paginate(caseSearch.filteredData, caseTablePage).map(
                             (caseItem) => (
                               <tr
-                                key={caseItem.id}
+                                key={caseItem.firestoreId || caseItem.id}
                                 className={`tl-row ${
                                   caseItem.status === "Met"
                                     ? "tl-row--met"
@@ -790,23 +701,17 @@ function DashboardTeamLead({ username, onLogout }) {
                                     />
                                   ) : null}
                                 </td>
-                                <td>{caseItem.date}</td>
-                                <td>{caseItem.id}</td>
-                                <td>{caseItem.agent}</td>
-                                <td>{caseItem.assignedTime}</td>
-                                <td>{caseItem.priority}</td>
-                                <td>{caseItem.expectedTime}</td>
-                                <td>{caseItem.touched}</td>
-                                <td>{caseItem.touchedTimeFix}</td>
-                                <td
-                                  className={`tl-status ${
-                                    caseItem.status === "Met"
-                                      ? "tl-status--met"
-                                      : "tl-status--missed"
-                                  }`}
-                                >
-                                  {caseItem.status}
-                                </td>
+                                {caseHeaders.map((header) => {
+                                  const isStatusCol = HEADER_MAP[normalise(header)] === "status";
+                                  return (
+                                    <td
+                                      key={header}
+                                      className={isStatusCol ? `tl-status ${caseItem.status === "Met" ? "tl-status--met" : "tl-status--missed"}` : ""}
+                                    >
+                                      {caseItem._raw?.[header] ?? ""}
+                                    </td>
+                                  );
+                                })}
                               </tr>
                             ),
                           )
@@ -992,22 +897,16 @@ function DashboardTeamLead({ username, onLogout }) {
                     <table className="tl-table">
                       <thead>
                         <tr>
-                          <th>Date</th>
-                          <th>Case Number</th>
-                          <th>Agent</th>
-                          <th>Assigned Time (9AM) EST</th>
-                          <th>Priority</th>
-                          <th>EXCPECTED TIME (EST)</th>
-                          <th>Touched (EST)</th>
-                          <th>Touched Time Fix (EST)</th>
-                          <th>Met/Not Met TAT</th>
+                          {caseHeaders.map((header) => (
+                            <th key={header}>{header}</th>
+                          ))}
                         </tr>
                       </thead>
                       <tbody>
                         {caseHistorySearch.filteredData.length === 0 ? (
                           <tr>
                             <td
-                              colSpan="9"
+                              colSpan={caseHeaders.length || 9}
                               style={{
                                 textAlign: "center",
                                 padding: "40px",
@@ -1024,30 +923,24 @@ function DashboardTeamLead({ username, onLogout }) {
                             historyCasePage,
                           ).map((caseItem) => (
                             <tr
-                              key={caseItem.id}
+                              key={caseItem.firestoreId || caseItem.id}
                               className={`tl-row ${
                                 caseItem.status === "Met"
                                   ? "tl-row--met"
                                   : "tl-row--missed"
                               }`}
                             >
-                              <td>{caseItem.date}</td>
-                              <td>{caseItem.id}</td>
-                              <td>{caseItem.agent}</td>
-                              <td>{caseItem.assignedTime}</td>
-                              <td>{caseItem.priority}</td>
-                              <td>{caseItem.expectedTime}</td>
-                              <td>{caseItem.touched}</td>
-                              <td>{caseItem.touchedTimeFix}</td>
-                              <td
-                                className={`tl-status ${
-                                  caseItem.status === "Met"
-                                    ? "tl-status--met"
-                                    : "tl-status--missed"
-                                }`}
-                              >
-                                {caseItem.status}
-                              </td>
+                              {caseHeaders.map((header) => {
+                                const isStatusCol = HEADER_MAP[normalise(header)] === "status";
+                                return (
+                                  <td
+                                    key={header}
+                                    className={isStatusCol ? `tl-status ${caseItem.status === "Met" ? "tl-status--met" : "tl-status--missed"}` : ""}
+                                  >
+                                    {caseItem._raw?.[header] ?? ""}
+                                  </td>
+                                );
+                              })}
                             </tr>
                           ))
                         )}
@@ -1391,25 +1284,34 @@ function DashboardTeamLead({ username, onLogout }) {
                     <button
                       className="tl-upload-save"
                       type="button"
-                      onClick={() => {
-                        // Populate all tables with static data
-                        setCaseData(STATIC_CASE_DATA);
-                        setAgentSummaryData(STATIC_AGENT_SUMMARY);
-                        setCaseHistoryData(STATIC_CASE_HISTORY);
-
-                        alert(
-                          `File "${uploadedFile.name}" saved successfully!`,
-                        );
-                        setUploadedFile(null);
+                      disabled={uploadLoading}
+                      onClick={async () => {
+                        setUploadLoading(true);
                         setUploadError("");
-                        setIsUploadOpen(false);
-                        const input =
-                          document.querySelector(".tl-upload-input");
-                        if (input) input.value = "";
+                        try {
+                          const { cases, headers } = await parseExcelFile(uploadedFile);
+                          await uploadCases(cases, headers);
+                          const { cases: allData, headers: allHeaders } = await getAllCases();
+                          if (allData.length > 0) {
+                            setCaseData(allData);
+                            setCaseHistoryData(allData);
+                            setCaseHeaders(allHeaders);
+                          }
+                          alert(`"${uploadedFile.name}" saved! ${cases.length} cases imported.`);
+                          setUploadedFile(null);
+                          setUploadError("");
+                          setIsUploadOpen(false);
+                          const input = document.querySelector(".tl-upload-input");
+                          if (input) input.value = "";
+                        } catch (err) {
+                          setUploadError(err.message);
+                        } finally {
+                          setUploadLoading(false);
+                        }
                       }}
                       aria-label="Save file"
                     >
-                      Save
+                      {uploadLoading ? "Saving..." : "Save"}
                     </button>
                   </div>
                 </div>
