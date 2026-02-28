@@ -12,6 +12,12 @@ import {
   deleteUser,
 } from "./api/usersAPI";
 import { uploadCases, getAllCases, updateCasesAgent } from "./api/casesAPI";
+import {
+  subscribeHelpRequests,
+  markHelpRequestRead,
+  sendReply,
+  reassignHelpRequestCase,
+} from "./api/helpRequestsAPI";
 import { parseExcelFile, deriveAgentSummary, HEADER_MAP, normalise } from "./utils/excelParser";
 import "./DashboardTeamLead.css";
 
@@ -51,9 +57,9 @@ function DashboardTeamLead({ username, onLogout }) {
   const [selectedAgent, setSelectedAgent] = useState("");
   // Selected notification row for detail panel.
   const [selectedNotification, setSelectedNotification] = useState(null);
-  // Track read/unread status for notifications
-  const [notificationReadStatus, setNotificationReadStatus] = useState({});
-  // Track if notification page has been visited in this session
+  // Live help requests from Firestore (replaces STATIC_NOTIFICATIONS)
+  const [helpRequests, setHelpRequests] = useState([]);
+  // Hide carousel once the user has visited the notification page
   const [notificationPageVisited, setNotificationPageVisited] = useState(false);
   // Pagination states
   const [agentSummaryPage, setAgentSummaryPage] = useState(1);
@@ -67,37 +73,11 @@ function DashboardTeamLead({ username, onLogout }) {
   // Column headers derived from the uploaded Excel file
   const [caseHeaders, setCaseHeaders] = useState([]);
 
-  // Static notification / help request data
-  const STATIC_NOTIFICATIONS = [
-    {
-      id: 1,
-      agent: "A. Cruz",
-      caseNumber: "CS-2041",
-      reason: "This is a test notification - Help request submitted",
-      time: "5 mins ago",
-    },
-    {
-      id: 2,
-      agent: "J. Lim",
-      caseNumber: "CS-2043",
-      reason: "Test message - Agent needs assistance with document review",
-      time: "12 mins ago",
-    },
-    {
-      id: 3,
-      agent: "S. Tan",
-      caseNumber: "CS-2045",
-      reason: "Sample help request for testing purposes",
-      time: "18 mins ago",
-    },
-    {
-      id: 4,
-      agent: "M. Santos",
-      caseNumber: "CS-2047",
-      reason: "Test notification - Support needed for urgent case",
-      time: "25 mins ago",
-    },
-  ];
+  // Subscribe to live help requests from Firestore on mount
+  useEffect(() => {
+    const unsub = subscribeHelpRequests((requests) => setHelpRequests(requests));
+    return () => unsub();
+  }, []);
 
   // Load users from Firestore on mount
   useEffect(() => {
@@ -347,14 +327,12 @@ function DashboardTeamLead({ username, onLogout }) {
     setSelectedAgent("");
   };
 
-  const handleNotificationClick = (notif) => {
-    // Mark as read when clicked
-    setNotificationReadStatus((prev) => ({
-      ...prev,
-      [notif.id]: true,
-    }));
-
-    // Toggle selection (close if already selected)
+  const handleNotificationClick = async (notif) => {
+    // Mark as read in Firestore (fire-and-forget)
+    if (!notif.read) {
+      markHelpRequestRead(notif.id).catch(console.error);
+    }
+    // Toggle detail panel
     setSelectedNotification(
       selectedNotification?.id === notif.id ? null : notif
     );
@@ -467,6 +445,7 @@ function DashboardTeamLead({ username, onLogout }) {
         </aside>
         <main className="tl-main">
           <NotificationCarousel
+            notifications={helpRequests}
             isVisible={!notificationPageVisited}
             onNotificationClick={() => handleSelectView("notification")}
           />
@@ -1000,26 +979,33 @@ function DashboardTeamLead({ username, onLogout }) {
                         </tr>
                       </thead>
                       <tbody>
-                        {STATIC_NOTIFICATIONS.map((notif) => {
-                          const isRead = notificationReadStatus[notif.id];
-                          const isActive = selectedNotification?.id === notif.id;
-                          return (
-                            <tr
-                              key={notif.id}
-                              className={`tl-notif-row${isActive ? " tl-notif-row--active" : ""}${!isRead ? " tl-notif-row--unread" : ""}`}
-                              onClick={() => handleNotificationClick(notif)}
-                              style={{ cursor: "pointer" }}
-                            >
-                              <td className="tl-notification-agent">
-                                {!isRead && <span className="tl-unread-indicator" aria-label="Unread">●</span>}
-                                {notif.agent}
-                              </td>
-                              <td className="tl-notification-case">{notif.caseNumber}</td>
-                              <td className="tl-notification-reason">{notif.reason}</td>
-                              <td className="tl-notification-time">{notif.time}</td>
-                            </tr>
-                          );
-                        })}
+                        {helpRequests.length === 0 ? (
+                          <tr>
+                            <td colSpan="4" style={{ textAlign: "center", padding: "40px", color: "#999", fontStyle: "italic" }}>
+                              No help requests yet.
+                            </td>
+                          </tr>
+                        ) : (
+                          helpRequests.map((notif) => {
+                            const isActive = selectedNotification?.id === notif.id;
+                            return (
+                              <tr
+                                key={notif.id}
+                                className={`tl-notif-row${isActive ? " tl-notif-row--active" : ""}${!notif.read ? " tl-notif-row--unread" : ""}`}
+                                onClick={() => handleNotificationClick(notif)}
+                                style={{ cursor: "pointer" }}
+                              >
+                                <td className="tl-notification-agent">
+                                  {!notif.read && <span className="tl-unread-indicator" aria-label="Unread">●</span>}
+                                  {notif.agent}
+                                </td>
+                                <td className="tl-notification-case">{notif.caseNumber}</td>
+                                <td className="tl-notification-reason">{notif.reason}</td>
+                                <td className="tl-notification-time">{notif.time}</td>
+                              </tr>
+                            );
+                          })
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -1029,6 +1015,8 @@ function DashboardTeamLead({ username, onLogout }) {
                   <HelpRequestDetail
                     request={selectedNotification}
                     agents={availableAgents}
+                    onReply={(id, replyText) => sendReply(id, replyText, username)}
+                    onReassign={(id, agentName) => reassignHelpRequestCase(id, agentName)}
                     onClose={() => setSelectedNotification(null)}
                   />
                 )}

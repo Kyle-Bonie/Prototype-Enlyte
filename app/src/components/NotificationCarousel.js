@@ -1,66 +1,46 @@
 import { useState, useEffect } from "react";
 import "./NotificationCarousel.css";
 
-function NotificationCarousel({ isVisible = true, onNotificationClick }) {
+// notifications: array of help request objects from Firestore (via helpRequestsAPI)
+// Each item: { id, agent, caseNumber, reason, time, status, read }
+function NotificationCarousel({ isVisible = true, onNotificationClick, notifications = [] }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [resetKey, setResetKey] = useState(0);
 
-  // Dummy data for help requests from agents
-  const notifications = [
-    {
-      id: 1,
-      agent: "A. Cruz",
-      caseId: "CS-2041",
-      reason: "This is a test notification - Help request submitted",
-      time: "5 mins ago",
-    },
-    {
-      id: 2,
-      agent: "J. Lim",
-      caseId: "CS-2043",
-      reason: "Test message - Agent needs assistance",
-      time: "12 mins ago",
-    },
-    {
-      id: 3,
-      agent: "S. Tan",
-      caseId: "CS-2045",
-      reason: "Sample help request for testing purposes",
-      time: "18 mins ago",
-    },
-    {
-      id: 4,
-      agent: "M. Santos",
-      caseId: "CS-2047",
-      reason: "Test notification - Support needed",
-      time: "25 mins ago",
-    },
-  ];
+  // Only show requests the team lead has NOT yet read
+  const unreadNotifications = notifications.filter((n) => !n.read);
+
+  // Keep currentIndex in bounds if unread list shrinks
+  useEffect(() => {
+    if (unreadNotifications.length > 0 && currentIndex >= unreadNotifications.length) {
+      setCurrentIndex(0);
+    }
+  }, [unreadNotifications.length, currentIndex]);
 
   // Auto-rotate carousel every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % notifications.length);
+      setCurrentIndex((prev) => (prev + 1) % unreadNotifications.length);
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [notifications.length, resetKey]);
+  }, [unreadNotifications.length, resetKey]);
 
   const handlePrevious = () => {
-    setCurrentIndex((prev) =>                         
-      prev === 0 ? notifications.length - 1 : prev - 1,
+    setCurrentIndex((prev) =>
+      prev === 0 ? unreadNotifications.length - 1 : prev - 1,
     );
     setResetKey((prev) => prev + 1);
   };
 
   const handleNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % notifications.length);
+    setCurrentIndex((prev) => (prev + 1) % unreadNotifications.length);
     setResetKey((prev) => prev + 1);
   };
 
-  if (notifications.length === 0 || !isVisible) return null;
+  if (unreadNotifications.length === 0 || !isVisible) return null;
 
-  const currentNotification = notifications[currentIndex];
+  const currentNotification = unreadNotifications[currentIndex];
 
   const handlePanelClick = () => {
     if (onNotificationClick) {
@@ -76,7 +56,7 @@ function NotificationCarousel({ isVisible = true, onNotificationClick }) {
     >
       <div className="notification-icon">
         <span className="notification-bell">🔔</span>
-        <span className="notification-badge">{notifications.length}</span>
+        <span className="notification-badge">{unreadNotifications.length}</span>
       </div>
 
       <div className="notification-content">
@@ -89,7 +69,7 @@ function NotificationCarousel({ isVisible = true, onNotificationClick }) {
           </div>
           <div className="notification-message">
             <strong>{currentNotification.agent}</strong> -{" "}
-            {currentNotification.caseId}: {currentNotification.reason}
+            {currentNotification.caseNumber}: {currentNotification.reason}
           </div>
         </div>
       </div>
@@ -106,7 +86,7 @@ function NotificationCarousel({ isVisible = true, onNotificationClick }) {
           ‹
         </button>
         <div className="notification-indicators">
-          {notifications.map((_, index) => (
+          {unreadNotifications.map((_, index) => (
             <span
               key={index}
               className={`notification-dot ${index === currentIndex ? "active" : ""}`}
