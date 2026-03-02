@@ -7,6 +7,7 @@ import {
   serverTimestamp,
   query,
   orderBy,
+  where,
 } from "firebase/firestore";
 import { db } from "../firebase";
 
@@ -99,4 +100,36 @@ export const reassignHelpRequestCase = async (helpRequestId, newAgent) => {
     status: "reassigned",
     read: true,
   });
+};
+
+// ─────────────────────────────────────────────
+// Subscribe to an AGENT's own help requests in
+// real time, filtered by agentUsername.
+// Detects new replies by tracking previous state.
+// callback(requests: array) — called on every change.
+// ─────────────────────────────────────────────
+export const subscribeAgentHelpRequests = (agentUsername, callback) => {
+  // Only filter by agentUsername — no orderBy on a different field, so no
+  // composite index is needed. We sort client-side instead.
+  const q = query(
+    collection(db, COLLECTION),
+    where("agentUsername", "==", agentUsername)
+  );
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const docs = snapshot.docs
+        .map(mapDoc)
+        .sort((a, b) => {
+          // newest first; fall back gracefully when createdAt is null (pending write)
+          const tA = a.createdAt?.toDate?.()?.getTime() ?? 0;
+          const tB = b.createdAt?.toDate?.()?.getTime() ?? 0;
+          return tB - tA;
+        });
+      callback(docs);
+    },
+    (err) => {
+      console.error("[subscribeAgentHelpRequests] Firestore error:", err.message);
+    }
+  );
 };

@@ -1,13 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import ApricusLogo from "./assets/ApricusLogo.png";
 import DashboardAgentNeedHelp from "./components/DashboardAgentNeedHelp";
+import MyRequests from "./components/MyRequests";
 import { subscribeCases, submitHelpRequest, updateCasesStatus } from "./api/casesAPI";
+import { subscribeAgentHelpRequests } from "./api/helpRequestsAPI";
 import { getUserByUsername } from "./api/usersAPI";
 import { HEADER_MAP, normalise } from "./utils/excelParser";
 import DashboardAgentChart from "./components/DashboardAgentChart";
 import SearchBar from "./components/SearchBar";
 import useSearch from "./hooks/useSearch";
 import "./DashboardAgent.css";
+import "./components/MyRequests.css";
 
 // ─── Module-level constants ────────────────────────────────────────────────────
 // Default deadline from assignment time: 4 hours in seconds
@@ -84,6 +87,13 @@ function DashboardAgent({ username, onLogout }) {
   const [isNeedHelpOpen, setIsNeedHelpOpen] = useState(false);
   const [helpPreSelectedCaseId, setHelpPreSelectedCaseId] = useState("");
 
+  // ── My Requests ───────────────────────────────────────────────────────────
+  const [myRequests, setMyRequests] = useState([]);
+  const [replyToast, setReplyToast] = useState(null); // { caseNumber, repliedBy, reply }
+  const [unreadReplies, setUnreadReplies] = useState(0);
+  // null = not yet initialised; Set<string> = request IDs that already had a reply
+  const knownRepliedIdsRef = useRef(null);
+
   // ── Refs ──────────────────────────────────────────────────────────────────
   const agentNameRef = useRef("");
   // null = first load not yet done; Set<string> = IDs seen on previous snapshot
@@ -144,6 +154,36 @@ function DashboardAgent({ username, onLogout }) {
     return () => unsub();
   }, [username]);
 
+  // ── Subscribe to this agent's help requests in real-time ──────────────────
+  useEffect(() => {
+    if (!username) return;
+    const unsub = subscribeAgentHelpRequests(username, (requests) => {
+      setMyRequests(requests);
+
+      // Detect brand-new replies (status flipped to "replied" or "reassigned")
+      const replied = requests.filter(
+        (r) => r.status === "replied" || r.status === "reassigned"
+      );
+
+      if (knownRepliedIdsRef.current === null) {
+        // First load — baseline, no toast
+        knownRepliedIdsRef.current = new Set(replied.map((r) => r.id));
+        return;
+      }
+
+      const incoming = replied.filter(
+        (r) => !knownRepliedIdsRef.current.has(r.id)
+      );
+
+      if (incoming.length > 0) {
+        knownRepliedIdsRef.current = new Set(replied.map((r) => r.id));
+        setReplyToast(incoming[0]);
+        setUnreadReplies((prev) => prev + incoming.length);
+      }
+    });
+    return () => unsub();
+  }, [username]);
+
   // Cases assigned to this agent — filter by top-level `agent` field
   // (written by team lead via updateCasesAgent). Also falls back to checking
   // the _raw agent column so the filter always uses the correct name.
@@ -189,7 +229,10 @@ function DashboardAgent({ username, onLogout }) {
     status: caseStatuses[c.firestoreId] ?? c.status,
   }));
 
-  const headingText = activeView === "summary" ? "Summary" : "My Cases";
+  const headingText =
+    activeView === "summary"  ? "Summary"     :
+    activeView === "requests" ? "My Requests" :
+    "My Cases";
 
   // ── Detect newly assigned cases → show modal + audio + toast ────────────
   useEffect(() => {
@@ -282,6 +325,7 @@ function DashboardAgent({ username, onLogout }) {
     }
   };
 
+
   // Only closeable via "In Progress" — no cancel / backdrop dismiss
   const handleModalInProgress = () => {
     setShowModal(false);
@@ -325,6 +369,20 @@ function DashboardAgent({ username, onLogout }) {
               </span>
               <span className="tl-nav-text">Summary</span>
             </button>
+            <button
+              className={`tl-nav-item${activeView === "requests" ? " active" : ""}`}
+              type="button"
+              onClick={() => {
+                setActiveView("requests");
+                setUnreadReplies(0);
+              }}
+            >
+              <span className="tl-nav-icon" aria-hidden="true">💬</span>
+              <span className="tl-nav-text">My Requests</span>
+              {unreadReplies > 0 && (
+                <span className="mr-nav-badge">{unreadReplies}</span>
+              )}
+            </button>
           </nav>
           <div className="tl-sidebar-spacer" />
           <button className="tl-logout" type="button" onClick={onLogout}>
@@ -335,7 +393,17 @@ function DashboardAgent({ username, onLogout }) {
           <div className="agent-content">
             <h1 className="agent-title">{headingText}</h1>
             <p className="agent-subtitle">Welcome, {username}.</p>
-            {activeView === "summary" ? (
+            {activeView === "requests" ? (
+              <section className="tl-tile tl-table-tile">
+                <div className="tl-tile-header">
+                  <h2 className="tl-tile-title">My Help Requests</h2>
+                  <span style={{ fontSize: "13px", color: "#94a3b8" }}>
+                    {myRequests.length} request{myRequests.length !== 1 ? "s" : ""}
+                  </span>
+                </div>
+                <MyRequests requests={myRequests} />
+              </section>
+            ) : activeView === "summary" ? (
               <>
                 <section className="tl-tile tl-table-tile">
                   <div className="tl-tile-header">
@@ -642,6 +710,31 @@ function DashboardAgent({ username, onLogout }) {
           await submitHelpRequest({ caseId, reason, agentUsername: username });
         }}
       />
+      {/* ── Reply toast ── */}
+      {replyToast && (
+        <div className="mr-reply-toast" role="alert">
+          <div className="mr-reply-toast-header">
+            <span className="mr-reply-toast-title">
+              💬 Team Lead Replied
+            </span>
+          </div>
+          <p className="mr-reply-toast-body">
+            Reply received for case <strong>{replyToast.caseNumber || "—"}</strong>
+            {replyToast.repliedBy ? ` from ${replyToast.repliedBy}` : ""}.
+          </p>
+          <button
+            className="mr-reply-toast-action"
+            type="button"
+            onClick={() => {
+              setReplyToast(null);
+              setUnreadReplies(0);
+              setActiveView("requests");
+            }}
+          >
+            View My Requests
+          </button>
+        </div>
+      )}
       {showToast && newCases.length > 0 && (
         <div className="agent-toast">
           <div className="agent-toast-content">

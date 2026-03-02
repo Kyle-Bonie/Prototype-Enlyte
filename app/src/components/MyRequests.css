@@ -1,0 +1,325 @@
+/* ─── My Requests — ticket list ───────────────────────────────────────────── */
+
+.mr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ─── Individual ticket card ──────────────────────────────────────────────── */
+.mr-ticket {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 20px 24px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.mr-ticket:hover {
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.1);
+  transform: translateY(-1px);
+}
+
+/* ─── Header row ──────────────────────────────────────────────────────────── */
+.mr-ticket-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mr-ticket-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mr-ticket-id {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+  font-family: monospace;
+}
+
+.mr-case-chip {
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid #bfdbfe;
+}
+
+.mr-ticket-time {
+  font-size: 12px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+/* ─── Status badges ───────────────────────────────────────────────────────── */
+.mr-badge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 3px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+}
+
+.mr-badge--pending {
+  background: #fef9c3;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.mr-badge--replied {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.mr-badge--reassigned {
+  background: #ede9fe;
+  color: #6d28d9;
+  border: 1px solid #c4b5fd;
+}
+
+/* ─── Body (reason) ───────────────────────────────────────────────────────── */
+.mr-ticket-body {
+  margin-bottom: 14px;
+}
+
+.mr-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  color: #94a3b8;
+  text-transform: uppercase;
+  margin: 0 0 6px;
+}
+
+.mr-reason-text {
+  font-size: 14px;
+  color: #1e293b;
+  line-height: 1.55;
+  margin: 0;
+  background: #f8fafc;
+  border-left: 3px solid #cbd5e1;
+  padding: 10px 14px;
+  border-radius: 0 8px 8px 0;
+}
+
+/* ─── Reply block ─────────────────────────────────────────────────────────── */
+.mr-reply-block {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-top: 4px;
+}
+
+.mr-reply-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.mr-reply-icon {
+  font-size: 14px;
+}
+
+.mr-reply-by {
+  font-size: 13px;
+  font-weight: 600;
+  color: #15803d;
+}
+
+.mr-reply-time {
+  font-size: 11px;
+  color: #86efac;
+  margin-left: auto;
+}
+
+.mr-reply-text {
+  font-size: 14px;
+  color: #166534;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* ─── Reassign block ──────────────────────────────────────────────────────── */
+.mr-reassign-block {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+  border-radius: 10px;
+  padding: 10px 14px;
+  flex-wrap: wrap;
+}
+
+.mr-reassign-icon {
+  font-size: 14px;
+}
+
+.mr-reassign-text {
+  font-size: 13px;
+  color: #4c1d95;
+}
+
+.mr-reassign-text strong {
+  font-weight: 700;
+}
+
+/* ─── Awaiting reply ──────────────────────────────────────────────────────── */
+.mr-awaiting {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+.mr-awaiting-dot {
+  width: 8px;
+  height: 8px;
+  background: #fbbf24;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: mr-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes mr-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* ─── Empty state ─────────────────────────────────────────────────────────── */
+.mr-empty {
+  text-align: center;
+  padding: 64px 24px;
+  color: #94a3b8;
+}
+
+.mr-empty-icon {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 16px;
+  filter: grayscale(1) opacity(0.5);
+}
+
+.mr-empty-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #475569;
+  margin: 0 0 8px;
+}
+
+.mr-empty-sub {
+  font-size: 14px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* ─── Reply toast ─────────────────────────────────────────────────────────── */
+.mr-reply-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 4000;
+  background: #ffffff;
+  border: 1px solid #bbf7d0;
+  border-left: 4px solid #16a34a;
+  border-radius: 12px;
+  padding: 16px 20px;
+  width: min(380px, calc(100vw - 48px));
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: mr-toast-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes mr-toast-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+.mr-reply-toast-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mr-reply-toast-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #15803d;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mr-reply-toast-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+}
+
+.mr-reply-toast-body {
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.mr-reply-toast-body strong {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.mr-reply-toast-action {
+  align-self: flex-start;
+  background: #16a34a;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.mr-reply-toast-action:hover {
+  background: #15803d;
+}
+
+/* ─── Sidebar badge ───────────────────────────────────────────────────────── */
+.mr-nav-badge {
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 1px 6px;
+  margin-left: auto;
+  min-width: 18px;
+  text-align: center;
+  line-height: 1.6;
+}
