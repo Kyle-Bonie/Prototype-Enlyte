@@ -1,7 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import ApricusLogo from "./assets/ApricusLogo.png";
 import DashboardAgentNeedHelp from "./components/DashboardAgentNeedHelp";
-import { getAllCases, submitHelpRequest } from "./api/casesAPI";
+import { subscribeCases, submitHelpRequest, updateCasesStatus } from "./api/casesAPI";
+import { getUserByUsername } from "./api/usersAPI";
+import { HEADER_MAP, normalise } from "./utils/excelParser";
+import DashboardAgentChart from "./components/DashboardAgentChart";
+import SearchBar from "./components/SearchBar";
+import useSearch from "./hooks/useSearch";
 import "./DashboardAgent.css";
 
 function DashboardAgent({ username, onLogout }) {
@@ -15,13 +20,39 @@ function DashboardAgent({ username, onLogout }) {
   const [caseStatuses, setCaseStatuses] = useState({});
   const [isNeedHelpOpen, setIsNeedHelpOpen] = useState(false);
   const [dateRange, setDateRange] = useState("today");
-  // Cases loaded from Firestore
-  const [firestoreCases, setFirestoreCases] = useState([]);
+  // Live cases from Firestore
+  const [allCases, setAllCases] = useState([]);
+  const [caseHeaders, setCaseHeaders] = useState([]);
+  // The agent's display name (used to filter cases assigned to them)
+  const [agentName, setAgentName] = useState("");
+  // Ref keeps the resolved name available synchronously inside callbacks
+  const agentNameRef = useRef("");
 
-  // Load cases from Firestore on mount
+  // Resolve agent display name first, THEN subscribe so the filter is never
+  // run with an empty name on the initial Firestore snapshot.
   useEffect(() => {
-    getAllCases().then(({ cases }) => setFirestoreCases(cases)).catch(() => {});
-  }, []);
+    let unsub = () => {};
+
+    const init = async () => {
+      try {
+        const user = await getUserByUsername(username);
+        const name = user?.name ?? username;
+        agentNameRef.current = name;
+        setAgentName(name);
+      } catch {
+        agentNameRef.current = username;
+        setAgentName(username);
+      }
+
+      unsub = subscribeCases(({ cases, headers }) => {
+        setAllCases(cases);
+        setCaseHeaders(headers);
+      });
+    };
+
+    init();
+    return () => unsub();
+  }, [username]);
 
   // Helper function to calculate date ranges
   const getDateRange = (range) => {
@@ -60,79 +91,22 @@ function DashboardAgent({ username, onLogout }) {
     }
   };
 
-  // Case data
-  const caseData = [
-    {
-      id: "CS-2041",
-      date: "01/29/2026",
-      assignedTime: "09:00",
-      priority: "Urgent",
-      expectedTime: "13:30",
-      touched: "12:45",
-      touchedTimeFix: "12:55",
-      status: "Met",
-    },
-    {
-      id: "CS-2042",
-      date: "01/29/2026",
-      assignedTime: "09:00",
-      priority: "Standard",
-      expectedTime: "15:10",
-      touched: "15:40",
-      touchedTimeFix: "15:55",
-      status: "Not Met",
-    },
-    {
-      id: "CS-2043",
-      date: "01/29/2026",
-      assignedTime: "09:00",
-      priority: "Standard",
-      expectedTime: "16:00",
-      touched: "15:30",
-      touchedTimeFix: "15:45",
-      status: "Met",
-    },
-    {
-      id: "CS-2044",
-      date: "01/29/2026",
-      assignedTime: "09:00",
-      priority: "Urgent",
-      expectedTime: "13:00",
-      touched: "14:00",
-      touchedTimeFix: "14:15",
-      status: "Not Met",
-    },
-    {
-      id: "CS-2045",
-      date: "01/29/2026",
-      assignedTime: "09:00",
-      priority: "Standard",
-      expectedTime: "17:00",
-      touched: "16:20",
-      touchedTimeFix: "16:35",
-      status: "Met",
-    },
-    {
-      id: "CS-2046",
-      date: "01/29/2026",
-      assignedTime: "09:00",
-      priority: "Urgent",
-      expectedTime: "13:30",
-      touched: "12:50",
-      touchedTimeFix: "13:05",
-      status: "Met",
-    },
-    {
-      id: "CS-2047",
-      date: "01/29/2026",
-      assignedTime: "09:00",
-      priority: "Standard",
-      expectedTime: "15:30",
-      touched: "16:00",
-      touchedTimeFix: "16:10",
-      status: "Not Met",
-    },
-  ];
+  // Cases assigned to this agent — filter by top-level `agent` field
+  // (written by team lead via updateCasesAgent). Also falls back to checking
+  // the _raw agent column so the filter always uses the correct name.
+  const effectiveName = agentName || agentNameRef.current;
+  const myCases = effectiveName
+    ? allCases.filter((c) => {
+        if (c.agent && c.agent === effectiveName) return true;
+        // Fallback: check _raw agent column
+        const agentHeaderKey = caseHeaders.find(
+          (h) => HEADER_MAP[normalise(h)] === "agent"
+        );
+        return agentHeaderKey
+          ? (c._raw?.[agentHeaderKey] ?? "") === effectiveName
+          : false;
+      })
+    : [];
 
   // Pagination helper functions
   const paginate = (items, page) => {
@@ -141,7 +115,33 @@ function DashboardAgent({ username, onLogout }) {
     return items.slice(startIndex, endIndex);
   };
 
-  const totalPages = Math.ceil(caseData.length / itemsPerPage);
+  // Shared filter: search across all _raw values
+  const rawFilter = (item, search) =>
+    Object.values(item._raw ?? {}).some((v) =>
+      String(v).toLowerCase().includes(search)
+    );
+
+  // Search for Case Table (My Cases view)
+  const caseTableSearch = useSearch(myCases, rawFilter);
+  // Search for My Cases Summary table
+  const summarySearch = useSearch(myCases, rawFilter);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(
+      (activeView === "summary"
+        ? summarySearch.filteredData
+        : caseTableSearch.filteredData
+      ).length / itemsPerPage
+    )
+  );
+
+  // Merge optimistic local status overrides so the chart reflects
+  // "Mark as Done" instantly without waiting for Firestore round-trip.
+  const chartData = myCases.map((c) => ({
+    ...c,
+    status: caseStatuses[c.firestoreId] ?? c.status,
+  }));
 
   const headingText = activeView === "summary" ? "Summary" : "My Cases";
 
@@ -277,18 +277,31 @@ function DashboardAgent({ username, onLogout }) {
 
   const hasSelectedCases = Object.values(selectedCases).some(Boolean);
 
-  const handleMarkAsDone = () => {
-    // Update status for selected cases to "Met"
-    const updatedStatuses = { ...caseStatuses };
-    Object.keys(selectedCases).forEach((caseId) => {
-      if (selectedCases[caseId]) {
-        updatedStatuses[caseId] = "Met";
-      }
-    });
-    setCaseStatuses(updatedStatuses);
+  const handleMarkAsDone = async () => {
+    // Find which header key represents the status column
+    const statusHeaderKey = caseHeaders.find(
+      (h) => HEADER_MAP[normalise(h)] === "status"
+    ) ?? null;
 
-    alert("Case/s marked as done.");
+    // Build Firestore update payload for each ticked case
+    const checkedIds = Object.keys(selectedCases).filter((id) => selectedCases[id]);
+    const firestoreUpdates = checkedIds.map((firestoreId) => {
+      const caseItem = myCases.find((c) => c.firestoreId === firestoreId);
+      return { firestoreId, currentRaw: caseItem?._raw ?? {}, statusHeaderKey };
+    });
+
+    // Optimistic local update so the row turns green immediately
+    const updatedStatuses = { ...caseStatuses };
+    checkedIds.forEach((id) => { updatedStatuses[id] = "Met"; });
+    setCaseStatuses(updatedStatuses);
     setSelectedCases({});
+
+    // Persist to Firestore — real-time listener will propagate to team lead
+    try {
+      await updateCasesStatus(firestoreUpdates);
+    } catch (err) {
+      console.error("Failed to update case status:", err);
+    }
   };
 
   const handleCloseModal = () => {
@@ -340,19 +353,6 @@ function DashboardAgent({ username, onLogout }) {
             <p className="agent-subtitle">Welcome, {username}.</p>
             {activeView === "summary" ? (
               <>
-                <div className="tl-tiles">
-                  <section className="tl-tile">
-                    <div className="tl-tile-header">
-                      <h2 className="tl-tile-title">Chart Preview</h2>
-                    </div>
-                    <div className="tl-chart">
-                      <div className="tl-chart-bar" />
-                      <div className="tl-chart-bar" />
-                      <div className="tl-chart-bar" />
-                      <div className="tl-chart-bar" />
-                    </div>
-                  </section>
-                </div>
                 <section className="tl-tile tl-table-tile">
                   <div className="tl-tile-header">
                     <h2 className="tl-tile-title">My Cases Summary</h2>
@@ -373,38 +373,52 @@ function DashboardAgent({ username, onLogout }) {
                       </span>
                     </div>
                   </div>
+                  <SearchBar
+                    value={summarySearch.searchText}
+                    onChange={(val) => { summarySearch.setSearchText(val); setCurrentPage(1); }}
+                    placeholder="Search cases..."
+                  />
                   <div className="tl-table-wrap">
                     <table className="tl-table">
                       <thead>
                         <tr>
-                          <th>Date</th>
-                          <th>Case Number</th>
-                          <th>Assigned Time (9AM) EST</th>
-                          <th>Priority</th>
-                          <th>EXCPECTED TIME (EST)</th>
-                          <th>Touched (EST)</th>
-                          <th>Touched Time Fix (EST)</th>
-                          <th>Met/Not Met TAT</th>
+                          {caseHeaders.map((header) => (
+                            <th key={header}>{header}</th>
+                          ))}
                         </tr>
                       </thead>
                       <tbody>
-                        {paginate(caseData, currentPage).map((caseItem) => {
-                          return (
-                            <tr
-                              key={caseItem.id}
-                              className="tl-row tl-row--met"
+                        {summarySearch.filteredData.length === 0 ? (
+                          <tr>
+                            <td
+                              colSpan={caseHeaders.length || 8}
+                              style={{ textAlign: "center", padding: "40px", color: "#999", fontStyle: "italic" }}
                             >
-                              <td>{caseItem.date}</td>
-                              <td>{caseItem.id}</td>
-                              <td>{caseItem.assignedTime}</td>
-                              <td>{caseItem.priority}</td>
-                              <td>{caseItem.expectedTime}</td>
-                              <td>{caseItem.touched}</td>
-                              <td>{caseItem.touchedTimeFix}</td>
-                              <td className="tl-status tl-status--met">Met</td>
+                              {myCases.length === 0 ? "No cases assigned to you yet." : "No matching cases found."}
+                            </td>
+                          </tr>
+                        ) : (
+                          paginate(summarySearch.filteredData, currentPage).map((caseItem) => (
+                            <tr
+                              key={caseItem.firestoreId}
+                              className={`tl-row ${
+                                caseItem.status === "Met" ? "tl-row--met" : "tl-row--missed"
+                              }`}
+                            >
+                              {caseHeaders.map((header) => {
+                                const isStatusCol = HEADER_MAP[normalise(header)] === "status";
+                                return (
+                                  <td
+                                    key={header}
+                                    className={isStatusCol ? `tl-status ${caseItem.status === "Met" ? "tl-status--met" : "tl-status--missed"}` : ""}
+                                  >
+                                    {caseItem._raw?.[header] ?? ""}
+                                  </td>
+                                );
+                              })}
                             </tr>
-                          );
-                        })}
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -432,6 +446,7 @@ function DashboardAgent({ username, onLogout }) {
                     </button>
                   </div>
                 </section>
+                <DashboardAgentChart data={chartData} />
               </>
             ) : (
               <section className="tl-tile tl-table-tile">
@@ -456,63 +471,66 @@ function DashboardAgent({ username, onLogout }) {
                     </button>
                   </div>
                 </div>
+                <SearchBar
+                  value={caseTableSearch.searchText}
+                  onChange={(val) => { caseTableSearch.setSearchText(val); setCurrentPage(1); }}
+                  placeholder="Search cases..."
+                />
                 <div className="tl-table-wrap">
                   <table className="tl-table">
                     <thead>
                       <tr>
                         <th aria-label="Select" />
-                        <th>Date</th>
-                        <th>Case Number</th>
-                        <th>Assigned Time (9AM) EST</th>
-                        <th>Priority</th>
-                        <th>EXCPECTED TIME (EST)</th>
-                        <th>Touched (EST)</th>
-                        <th>Touched Time Fix (EST)</th>
-                        <th>Met/Not Met TAT</th>
+                        {caseHeaders.map((header) => (
+                          <th key={header}>{header}</th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {paginate(caseData, currentPage).map((caseItem) => {
-                        const currentStatus =
-                          caseStatuses[caseItem.id] || caseItem.status;
-                        return (
-                          <tr
-                            key={caseItem.id}
-                            className={`tl-row ${
-                              currentStatus === "Met"
-                                ? "tl-row--met"
-                                : "tl-row--missed"
-                            }`}
+                      {caseTableSearch.filteredData.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={caseHeaders.length + 1 || 9}
+                            style={{ textAlign: "center", padding: "40px", color: "#999", fontStyle: "italic" }}
                           >
-                            <td>
-                              {currentStatus === "Not Met" ? (
-                                <input
-                                  type="checkbox"
-                                  aria-label={`Select case ${caseItem.id}`}
-                                  checked={!!selectedCases[caseItem.id]}
-                                  onChange={() => handleCaseToggle(caseItem.id)}
-                                />
-                              ) : null}
-                            </td>
-                            <td>{caseItem.date}</td>
-                            <td>{caseItem.id}</td>
-                            <td>{caseItem.assignedTime}</td>
-                            <td>{caseItem.priority}</td>
-                            <td>{caseItem.expectedTime}</td>
-                            <td>{caseItem.touched}</td>
-                            <td>{caseItem.touchedTimeFix}</td>
-                            <td
-                              className={`tl-status ${
-                                currentStatus === "Met"
-                                  ? "tl-status--met"
-                                  : "tl-status--missed"
+                            {myCases.length === 0 ? "No cases assigned to you yet." : "No matching cases found."}
+                          </td>
+                        </tr>
+                      ) : (
+                        paginate(caseTableSearch.filteredData, currentPage).map((caseItem) => {
+                          const currentStatus = caseStatuses[caseItem.firestoreId] || caseItem.status;
+                          return (
+                            <tr
+                              key={caseItem.firestoreId}
+                              className={`tl-row ${
+                                currentStatus === "Met" ? "tl-row--met" : "tl-row--missed"
                               }`}
                             >
-                              {currentStatus}
-                            </td>
-                          </tr>
-                        );
-                      })}
+                              <td>
+                                {currentStatus !== "Met" ? (
+                                  <input
+                                    type="checkbox"
+                                    aria-label={`Select case ${caseItem.id}`}
+                                    checked={!!selectedCases[caseItem.firestoreId]}
+                                    onChange={() => handleCaseToggle(caseItem.firestoreId)}
+                                  />
+                                ) : null}
+                              </td>
+                              {caseHeaders.map((header) => {
+                                const isStatusCol = HEADER_MAP[normalise(header)] === "status";
+                                return (
+                                  <td
+                                    key={header}
+                                    className={isStatusCol ? `tl-status ${currentStatus === "Met" ? "tl-status--met" : "tl-status--missed"}` : ""}
+                                  >
+                                    {isStatusCol ? currentStatus : (caseItem._raw?.[header] ?? "")}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -601,7 +619,7 @@ function DashboardAgent({ username, onLogout }) {
       <DashboardAgentNeedHelp
         isOpen={isNeedHelpOpen}
         onClose={() => setIsNeedHelpOpen(false)}
-        caseData={firestoreCases}
+        caseData={myCases}
         onSubmit={async ({ caseId, reason }) => {
           await submitHelpRequest({ caseId, reason, agentUsername: username });
         }}

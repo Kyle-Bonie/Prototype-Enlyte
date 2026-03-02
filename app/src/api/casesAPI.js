@@ -7,6 +7,9 @@ import {
   doc,
   setDoc,
   getDoc,
+  onSnapshot,
+  query,
+  orderBy,
 } from "firebase/firestore";
 import { db } from "../firebase";
 
@@ -72,6 +75,38 @@ export const getAllCases = async () => {
   return { cases, headers };
 };
 
+// Real-time subscription to all cases + headers.
+// callback({ cases, headers }) is called on every Firestore change.
+// Returns an unsubscribe function — call on component unmount.
+export const subscribeCases = (callback) => {
+  const q = query(collection(db, CASES_COLLECTION), orderBy("rowIndex", "asc"));
+
+  let latestHeaders = [];
+  let unsubSnapshot = null;
+
+  // Fetch headers first, THEN open the snapshot so the first callback
+  // always delivers the real headers rather than an empty array.
+  getDoc(doc(db, META_COLLECTION, META_DOC_ID))
+    .then((snap) => {
+      latestHeaders = snap.exists() ? (snap.data().headers ?? []) : [];
+    })
+    .catch(() => {})
+    .finally(() => {
+      unsubSnapshot = onSnapshot(q, (snapshot) => {
+        const cases = snapshot.docs.map((docSnap) => ({
+          firestoreId: docSnap.id,
+          ...docSnap.data(),
+        }));
+        callback({ cases, headers: latestHeaders });
+      });
+    });
+
+  // Return an unsubscribe fn that works whether the snapshot started yet or not
+  return () => {
+    if (unsubSnapshot) unsubSnapshot();
+  };
+};
+
 // Delete all cases (optional: reset)
 export const clearAllCases = async () => {
   const snapshot = await getDocs(collection(db, CASES_COLLECTION));
@@ -99,6 +134,24 @@ export const updateCasesAgent = async (updates) => {
   updates.forEach(({ firestoreId, agentValue, updatedRaw }) => {
     const ref = doc(db, CASES_COLLECTION, firestoreId);
     batch.update(ref, { agent: agentValue, _raw: updatedRaw });
+  });
+  await batch.commit();
+};
+
+/**
+ * Mark a set of cases as "Met" in Firestore.
+ * Updates both the top-level `status` field (used for row/cell CSS)
+ * and `_raw[statusHeaderKey]` (used for the displayed cell text).
+ * @param {Array<{ firestoreId: string, currentRaw: object, statusHeaderKey: string|null }>} updates
+ */
+export const updateCasesStatus = async (updates) => {
+  const batch = writeBatch(db);
+  updates.forEach(({ firestoreId, currentRaw, statusHeaderKey }) => {
+    const ref = doc(db, CASES_COLLECTION, firestoreId);
+    const updatedRaw = statusHeaderKey
+      ? { ...(currentRaw || {}), [statusHeaderKey]: "Met" }
+      : currentRaw || {};
+    batch.update(ref, { status: "Met", _raw: updatedRaw });
   });
   await batch.commit();
 };

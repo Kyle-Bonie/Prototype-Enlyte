@@ -52,3 +52,15 @@ export const deleteUser = async (userId) => {
   await deleteDoc(userRef);
   return true;
 };
+
+// Get a single user by username field
+export const getUserByUsername = async (username) => {
+  const q = query(
+    collection(db, USERS_COLLECTION),
+    where("username", "==", username)
+  );
+  const snapshot = await getDocs(q);
+  if (snapshot.empty) return null;
+  const docSnap = snapshot.docs[0];
+  return { id: docSnap.id, ...docSnap.data() };
+};

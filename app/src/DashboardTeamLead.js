@@ -734,19 +734,6 @@ function DashboardTeamLead({ username, onLogout }) {
             ) : activeView === "history" ? (
               <>
                 {/* Case History view tiles */}
-                <div className="tl-tiles">
-                  <section className="tl-tile">
-                    <div className="tl-tile-header">
-                      <h2 className="tl-tile-title">Chart Preview</h2>
-                    </div>
-                    <div className="tl-chart">
-                      <div className="tl-chart-bar" />
-                      <div className="tl-chart-bar" />
-                      <div className="tl-chart-bar" />
-                      <div className="tl-chart-bar" />
-                    </div>
-                  </section>
-                </div>
                 {/* Agent history table for history view */}
                 <section className="tl-tile tl-table-tile">
                   <div className="tl-tile-header">
