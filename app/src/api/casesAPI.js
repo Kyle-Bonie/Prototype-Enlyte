@@ -127,13 +127,15 @@ export const submitHelpRequest = async ({ caseId, reason, agentUsername }) => {
   });
 };
 
-// Batch-update the agent field (and _raw mirror) for a set of cases
+// Batch-update the agent field (and _raw mirror) for a set of cases.
+// Also stamps assignedAt so the agent dashboard can compute remaining time.
 // updates: [{ firestoreId, agentValue, updatedRaw }]
 export const updateCasesAgent = async (updates) => {
   const batch = writeBatch(db);
+  const now = serverTimestamp();
   updates.forEach(({ firestoreId, agentValue, updatedRaw }) => {
     const ref = doc(db, CASES_COLLECTION, firestoreId);
-    batch.update(ref, { agent: agentValue, _raw: updatedRaw });
+    batch.update(ref, { agent: agentValue, _raw: updatedRaw, assignedAt: now });
   });
   await batch.commit();
 };

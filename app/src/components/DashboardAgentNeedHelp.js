@@ -1,7 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { HEADER_MAP, normalise } from "../utils/excelParser";
 
-function DashboardAgentNeedHelp({ isOpen, onClose, caseData, onSubmit }) {
+function DashboardAgentNeedHelp({ isOpen, onClose, caseData, caseHeaders = [], preSelectedCaseId = "", onSubmit }) {
   const [selectedHelpCase, setSelectedHelpCase] = useState("");
+
+  // Auto-select the pre-selected case whenever the modal opens with one
+  useEffect(() => {
+    if (isOpen && preSelectedCaseId) {
+      setSelectedHelpCase(preSelectedCaseId);
+    }
+  }, [isOpen, preSelectedCaseId]);
   const [helpReason, setHelpReason] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -66,11 +74,17 @@ function DashboardAgentNeedHelp({ isOpen, onClose, caseData, onSubmit }) {
               {caseData.length === 0 ? (
                 <option value="" disabled>No cases available</option>
               ) : (
-                caseData.map((caseItem) => (
-                  <option key={caseItem.firestoreId || caseItem.id} value={caseItem.id}>
-                    {caseItem.id}{caseItem.priority ? ` - ${caseItem.priority}` : ""}
-                  </option>
-                ))
+                caseData.map((caseItem) => {
+                  const idKey = caseHeaders.find((h) => HEADER_MAP[normalise(h)] === "id");
+                  const caseNumber = idKey ? (caseItem._raw?.[idKey] ?? caseItem.firestoreId) : caseItem.firestoreId;
+                  const priorityKey = caseHeaders.find((h) => HEADER_MAP[normalise(h)] === "priority");
+                  const priority = priorityKey ? caseItem._raw?.[priorityKey] : null;
+                  return (
+                    <option key={caseItem.firestoreId} value={caseNumber}>
+                      {caseNumber}{priority ? ` - ${priority}` : ""}
+                    </option>
+                  );
+                })
               )}
             </select>
           </label>
