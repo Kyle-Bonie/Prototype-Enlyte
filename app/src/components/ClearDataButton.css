@@ -1,11 +1,14 @@
 /* Clear Data Button */
 .clear-data-button {
-  display: inline-flex;
+  display: block;
+  width: 100%;
+  text-align: center;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 8px 16px;
-  font-size: 13px;
+  /* match upload button sizing */
+  padding: 10px 14px;
+  font-size: 14px;
   font-weight: 600;
   color: #dc2626;
   background: #fff;

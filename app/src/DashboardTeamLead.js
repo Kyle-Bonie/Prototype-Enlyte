@@ -478,10 +478,6 @@ function DashboardTeamLead({ username, onLogout }) {
                   <section className="tl-tile">
                     <div className="tl-tile-header">
                       <h2 className="tl-tile-title">Upload Excel</h2>
-                      <ClearDataButton
-                        onClear={handleClearData}
-                        disabled={caseData.length === 0}
-                      />
                     </div>
                     <button
                       className="tl-upload-button"
@@ -491,6 +487,10 @@ function DashboardTeamLead({ username, onLogout }) {
                     >
                       Upload File
                     </button>
+                    <ClearDataButton
+                      onClear={handleClearData}
+                      disabled={caseData.length === 0}
+                    />
                   </section>
                 </div>
                 {/* Second row: Both charts side by side */}
