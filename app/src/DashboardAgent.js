@@ -13,19 +13,9 @@ import "./DashboardAgent.css";
 import "./components/MyRequests.css";
 
 // ─── Module-level constants ────────────────────────────────────────────────────
-// Default deadline from assignment time: 4 hours in seconds
-const DEADLINE_SECONDS = 4 * 60 * 60;
 const ITEMS_PER_PAGE = 5;
 const NOTIFICATION_SOUND =
   "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZijcIF2m98OScTgwPUKfj8LZjHAY4ktjyzXksBS";
-
-const formatTime = (seconds) => {
-  const s = Math.max(0, seconds);
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
-};
 
 const paginate = (items, page) => {
   const start = (page - 1) * ITEMS_PER_PAGE;
@@ -81,7 +71,6 @@ function DashboardAgent({ username, onLogout }) {
   const [newCases, setNewCases] = useState([]);       // newly assigned cases
   const [showModal, setShowModal] = useState(false);
   const [showToast, setShowToast] = useState(false);
-  const [modalRemainingTime, setModalRemainingTime] = useState(0);
 
   // ── Other ─────────────────────────────────────────────────────────────────
   const [isNeedHelpOpen, setIsNeedHelpOpen] = useState(false);
@@ -259,15 +248,6 @@ function DashboardAgent({ username, onLogout }) {
         setShowModal(true);
         setShowToast(true);
 
-        // Compute remaining time from Firestore assignedAt timestamp
-        const assignedAt = recentlyAssigned[0].assignedAt?.toDate?.();
-        if (assignedAt) {
-          const elapsed = Math.floor((now - assignedAt.getTime()) / 1000);
-          setModalRemainingTime(Math.max(0, DEADLINE_SECONDS - elapsed));
-        } else {
-          setModalRemainingTime(DEADLINE_SECONDS);
-        }
-
         startAudio();
 
         if ("Notification" in window) {
@@ -295,15 +275,6 @@ function DashboardAgent({ username, onLogout }) {
     setShowModal(true);
     setShowToast(true);
 
-    // Compute remaining time from Firestore assignedAt timestamp
-    const assignedAt = incoming[0].assignedAt?.toDate?.();
-    if (assignedAt) {
-      const elapsed = Math.floor((Date.now() - assignedAt.getTime()) / 1000);
-      setModalRemainingTime(Math.max(0, DEADLINE_SECONDS - elapsed));
-    } else {
-      setModalRemainingTime(DEADLINE_SECONDS);
-    }
-
     startAudio();
 
     if ("Notification" in window) {
@@ -320,16 +291,6 @@ function DashboardAgent({ username, onLogout }) {
   // effectiveName and myCases are the reactive deps; others are stable refs/callbacks
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myCases, effectiveName]);
-
-  // ── Modal countdown timer (only runs while modal is open) ────────────────
-  useEffect(() => {
-    if (!showModal) return;
-    const timer = setInterval(
-      () => setModalRemainingTime((prev) => Math.max(0, prev - 1)),
-      1000
-    );
-    return () => clearInterval(timer);
-  }, [showModal]);
 
   // ── Stop audio when modal closes ──────────────────────────────────────────
   useEffect(() => {
