@@ -25,6 +25,8 @@ export const HEADER_MAP = {
 
   // Assigned Time
   "assigned time (9am) est": "assignedTime",
+  "assigned time (9am)est": "assignedTime",   // no space before "est"
+  "assigned time (9am)": "assignedTime",
   "assigned time": "assignedTime",
   "assigned time est": "assignedTime",
 
@@ -44,6 +46,12 @@ export const HEADER_MAP = {
   // Touched Time Fix
   "touched time fix (est)": "touchedTimeFix",
   "touched time fix": "touchedTimeFix",
+  "time fix est": "touchedTimeFix",
+  "time fix": "touchedTimeFix",
+
+  // Month / Week (date columns)
+  "month": "month",
+  "week": "week",
 
   // Status / TAT
   "met/not met tat": "status",
@@ -53,7 +61,7 @@ export const HEADER_MAP = {
 };
 
 // Convert an Excel serial date number to a readable date string
-const excelDateToString = (serial) => {
+export const excelDateToString = (serial) => {
   if (!serial && serial !== 0) return "";
   if (typeof serial === "string") return serial;
 
@@ -66,16 +74,76 @@ const excelDateToString = (serial) => {
   return `${mm}/${dd}/${yyyy}`;
 };
 
-// Convert Excel time fraction (e.g. 0.375 = 09:00) or string to "HH:MM"
-const excelTimeToString = (val) => {
+// Convert Excel time fraction (e.g. 0.375 = 09:00) or string to "h:MM AM/PM"
+export const excelTimeToString = (val) => {
   if (!val && val !== 0) return "";
   if (typeof val === "string") return val.trim();
 
-  // Fraction of a day
-  const totalMinutes = Math.round(val * 24 * 60);
-  const hh = String(Math.floor(totalMinutes / 60) % 24).padStart(2, "0");
+  // Strip the date portion (integer part) — keep only the time fraction
+  // e.g. 46048.3986 → 0.3986, or 0.3986 → 0.3986
+  const timeFraction = val % 1;
+
+  // Fraction of a day → total minutes
+  const totalMinutes = Math.round(timeFraction * 24 * 60);
+  const totalHours = Math.floor(totalMinutes / 60) % 24;
   const mm = String(totalMinutes % 60).padStart(2, "0");
-  return `${hh}:${mm}`;
+  const period = totalHours < 12 ? "AM" : "PM";
+  const hh = totalHours % 12 === 0 ? 12 : totalHours % 12;
+  return `${hh}:${mm} ${period}`;
+};
+
+/**
+ * Sanitize cases fetched from Firestore by converting any leftover numeric
+ * Excel time fractions / date serials stored in _raw back to readable strings.
+ * Call this on every case returned from Firestore.
+ */
+export const sanitizeCasesFromFirestore = (cases, headers = []) => {
+  const TIME_FIELDS = new Set(["assignedTime", "expectedTime", "touched", "touchedTimeFix"]);
+  const DATE_FIELDS = new Set(["date", "month", "week"]);
+
+  return cases.map((caseObj) => {
+    if (!caseObj._raw) return caseObj;
+    const sanitizedRaw = { ...caseObj._raw };
+    const sanitized = { ...caseObj };
+
+    headers.forEach((header) => {
+      const field = HEADER_MAP[normalise(header)] || null;
+      const rawVal = sanitizedRaw[header];
+
+      // Accept both numeric values and string representations of decimals
+      // (strings happen when the header wasn't mapped at upload time)
+      let val = rawVal;
+      if (typeof rawVal === "string") {
+        const trimmed = rawVal.trim();
+        const parsed = parseFloat(trimmed);
+        // Check if it's a valid decimal string (not NaN, and looks like a number)
+        if (!isNaN(parsed) && /^-?\d*\.?\d+([eE][-+]?\d+)?$/.test(trimmed)) {
+          val = parsed;
+        }
+      }
+      if (typeof val !== "number") return; // not a numeric value — skip
+
+      if (field && TIME_FIELDS.has(field)) {
+        const converted = excelTimeToString(val);
+        sanitizedRaw[header] = converted;
+        sanitized[field] = converted;
+      } else if (field && DATE_FIELDS.has(field)) {
+        const converted = excelDateToString(val);
+        sanitizedRaw[header] = converted;
+        sanitized[field] = converted;
+      } else if (!field) {
+        // Unknown column — auto-detect
+        if (val > 0 && val < 1) {
+          sanitizedRaw[header] = excelTimeToString(val);
+        } else if (val >= 40000) {
+          sanitizedRaw[header] = excelDateToString(val);
+        }
+      }
+    });
+
+    sanitized._raw = sanitizedRaw;
+    return sanitized;
+  });
 };
 
 /**
@@ -90,7 +158,12 @@ export const parseExcelFile = (file) => {
     reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: "array", cellDates: false });
+        const workbook = XLSX.read(data, {
+          type: "array",
+          cellDates: false,
+          cellNF: false,
+          cellText: false,
+        });
 
         // Use the first sheet
         const sheetName = workbook.SheetNames[0];
@@ -101,6 +174,7 @@ export const parseExcelFile = (file) => {
           header: 1,
           defval: "",
           blankrows: false,
+          raw: true,  // always return raw numbers, never auto-formatted strings
         });
 
         if (rows.length < 2) {
@@ -135,7 +209,7 @@ export const parseExcelFile = (file) => {
             const raw = row[colIndex];
             let processedVal;
 
-            if (field === "date") {
+            if (field === "date" || field === "month" || field === "week") {
               processedVal = excelDateToString(raw);
             } else if (
               field === "assignedTime" ||
@@ -144,6 +218,15 @@ export const parseExcelFile = (file) => {
               field === "touchedTimeFix"
             ) {
               processedVal = excelTimeToString(raw);
+            } else if (!field && typeof raw === "number") {
+              // Auto-detect unrecognised columns: time fraction (0–1) or date serial (>=40000)
+              if (raw > 0 && raw < 1) {
+                processedVal = excelTimeToString(raw);
+              } else if (raw >= 40000) {
+                processedVal = excelDateToString(raw);
+              } else {
+                processedVal = String(raw ?? "").trim();
+              }
             } else {
               processedVal = String(raw ?? "").trim();
             }
@@ -161,6 +244,8 @@ export const parseExcelFile = (file) => {
           caseObj.expectedTime = caseObj.expectedTime || "";
           caseObj.touched = caseObj.touched || "";
           caseObj.touchedTimeFix = caseObj.touchedTimeFix || "";
+          caseObj.month = caseObj.month || "";
+          caseObj.week = caseObj.week || "";
           caseObj.status = caseObj.status || "";
 
           cases.push(caseObj);

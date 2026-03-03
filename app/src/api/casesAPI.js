@@ -12,6 +12,7 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { db } from "../firebase";
+import { sanitizeCasesFromFirestore } from "../utils/excelParser";
 
 const CASES_COLLECTION = "cases";
 const META_COLLECTION = "caseMeta";
@@ -72,7 +73,7 @@ export const getAllCases = async () => {
 
   const headers = metaSnap.exists() ? (metaSnap.data().headers ?? []) : [];
 
-  return { cases, headers };
+  return { cases: sanitizeCasesFromFirestore(cases, headers), headers };
 };
 
 // Real-time subscription to all cases + headers.
@@ -97,7 +98,7 @@ export const subscribeCases = (callback) => {
           firestoreId: docSnap.id,
           ...docSnap.data(),
         }));
-        callback({ cases, headers: latestHeaders });
+        callback({ cases: sanitizeCasesFromFirestore(cases, latestHeaders), headers: latestHeaders });
       });
     });
 
