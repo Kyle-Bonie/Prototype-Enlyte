@@ -240,9 +240,48 @@ function DashboardAgent({ username, onLogout }) {
 
     const currentIds = new Set(myCases.map((c) => c.firestoreId));
 
-    // First load — record baseline without showing modal
+    // First load — check if any cases were recently assigned (last 5 minutes)
     if (knownCaseIdsRef.current === null) {
+      const now = Date.now();
+      const recentThreshold = 5 * 60 * 1000; // 5 minutes in milliseconds
+      
+      const recentlyAssigned = myCases.filter((c) => {
+        const assignedAt = c.assignedAt?.toDate?.();
+        if (!assignedAt) return false;
+        return (now - assignedAt.getTime()) < recentThreshold;
+      });
+
       knownCaseIdsRef.current = currentIds;
+
+      // Show modal if there are recently assigned cases
+      if (recentlyAssigned.length > 0) {
+        setNewCases(recentlyAssigned);
+        setShowModal(true);
+        setShowToast(true);
+
+        // Compute remaining time from Firestore assignedAt timestamp
+        const assignedAt = recentlyAssigned[0].assignedAt?.toDate?.();
+        if (assignedAt) {
+          const elapsed = Math.floor((now - assignedAt.getTime()) / 1000);
+          setModalRemainingTime(Math.max(0, DEADLINE_SECONDS - elapsed));
+        } else {
+          setModalRemainingTime(DEADLINE_SECONDS);
+        }
+
+        startAudio();
+
+        if ("Notification" in window) {
+          Notification.requestPermission().then((perm) => {
+            if (perm === "granted") {
+              new Notification("You Have An Unfinished Case", {
+                body: `${recentlyAssigned.length} new case(s) assigned to you.`,
+                icon: "/EnlyteLogo.png",
+                tag: "case-assignment",
+              });
+            }
+          });
+        }
+      }
       return;
     }
 
@@ -270,7 +309,7 @@ function DashboardAgent({ username, onLogout }) {
     if ("Notification" in window) {
       Notification.requestPermission().then((perm) => {
         if (perm === "granted") {
-          new Notification("New Case Assigned", {
+          new Notification("You Have An Unfinished Case", {
             body: `${incoming.length} new case(s) assigned to you.`,
             icon: "/EnlyteLogo.png",
             tag: "case-assignment",
@@ -619,7 +658,7 @@ function DashboardAgent({ username, onLogout }) {
           {/* Backdrop is non-dismissible — only "In Progress" closes the modal */}
           <div className="agent-modal-backdrop" />
           <div className="agent-modal-card">
-            <h2 className="agent-modal-title" id="modal-title">New Assigned Case</h2>
+            <h2 className="agent-modal-title" id="modal-title">You have an unfinished case</h2>
             <p className="agent-modal-text">
               You have {newCases.length === 1 ? "a new case" : `${newCases.length} new cases`} assigned to you. Please review below.
             </p>
@@ -629,7 +668,6 @@ function DashboardAgent({ username, onLogout }) {
                 <span>Case Number</span>
                 <span>Assigned Time (9AM) EST</span>
                 <span>Met / Not Met TAT</span>
-                <span>Remaining Time</span>
               </div>
               {newCases.map((caseItem, idx) => {
                 const currentStatus = caseStatuses[caseItem.firestoreId] ?? caseItem.status;
@@ -665,9 +703,6 @@ function DashboardAgent({ username, onLogout }) {
                     <span>{assignedTime}</span>
                     <span className={`agent-modal-status ${currentStatus === "Met" ? "agent-modal-status--met" : "agent-modal-status--missed"}`}>
                       {currentStatus}
-                    </span>
-                    <span className="agent-modal-remaining">
-                      {idx === 0 ? formatTime(modalRemainingTime) : "—"}
                     </span>
                   </div>
                 );
@@ -746,7 +781,7 @@ function DashboardAgent({ username, onLogout }) {
             >
               ×
             </button>
-            <h3 className="agent-toast-title">New Case Assigned</h3>
+            <h3 className="agent-toast-title">You have an unfinished case</h3>
             <p className="agent-toast-body">
               {newCases.length === 1
                 ? `Case ${getRawValue(newCases[0], "id")} has been assigned to you.`
