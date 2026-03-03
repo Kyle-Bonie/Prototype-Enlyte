@@ -151,8 +151,14 @@
 
 .tl-tile-header {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tl-tile-header .tl-tile-title {
+  margin: 0;
 }
 
 .tl-table-tile .tl-tile-header {

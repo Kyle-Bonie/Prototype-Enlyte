@@ -11,7 +11,7 @@ import {
   updateUser,
   deleteUser,
 } from "./api/usersAPI";
-import { uploadCases, getAllCases, updateCasesAgent } from "./api/casesAPI";
+import { uploadCases, getAllCases, updateCasesAgent, clearAllCases } from "./api/casesAPI";
 import {
   subscribeHelpRequests,
   markHelpRequestRead,
@@ -19,6 +19,7 @@ import {
   reassignHelpRequestCase,
 } from "./api/helpRequestsAPI";
 import { parseExcelFile, deriveAgentSummary, HEADER_MAP, normalise } from "./utils/excelParser";
+import ClearDataButton from "./components/ClearDataButton";
 import "./DashboardTeamLead.css";
 
 function DashboardTeamLead({ username, onLogout }) {
@@ -270,6 +271,20 @@ function DashboardTeamLead({ username, onLogout }) {
     setUserForm({ name: "", username: "", password: "", employeeNumber: "", role: "Agent" });
   };
 
+  // Clear all case data from Firestore
+  const handleClearData = async () => {
+    try {
+      await clearAllCases();
+      setCaseData([]);
+      setCaseHistoryData([]);
+      setCaseHeaders([]);
+      setSelectedCases({});
+    } catch (err) {
+      console.error("Failed to clear data:", err);
+      throw err;
+    }
+  };
+
   const handleCaseToggle = (caseId) => {
     setSelectedCases((prev) => ({
       ...prev,
@@ -463,6 +478,10 @@ function DashboardTeamLead({ username, onLogout }) {
                   <section className="tl-tile">
                     <div className="tl-tile-header">
                       <h2 className="tl-tile-title">Upload Excel</h2>
+                      <ClearDataButton
+                        onClear={handleClearData}
+                        disabled={caseData.length === 0}
+                      />
                     </div>
                     <button
                       className="tl-upload-button"
