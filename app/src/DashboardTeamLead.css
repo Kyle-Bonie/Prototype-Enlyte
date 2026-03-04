@@ -176,6 +176,18 @@
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.tl-assign-button:hover:not(:disabled) {
+  background: #1e40af;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(30, 58, 138, 0.3);
+}
+
+.tl-assign-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 8px 16px rgba(30, 58, 138, 0.2);
 }
 
 .tl-assign-button:disabled {
@@ -232,6 +244,18 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.tl-upload-button:hover {
+  background: #1e40af;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(30, 58, 138, 0.3);
+}
+
+.tl-upload-button:active {
+  transform: translateY(0);
+  box-shadow: 0 8px 16px rgba(30, 58, 138, 0.2);
 }
 
 .tl-table-tile {
@@ -409,6 +433,13 @@
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.tl-primary:hover:not(:disabled) {
+  background: #1e40af;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(30, 58, 138, 0.3);
 }
 
 .tl-secondary {
@@ -849,5 +880,17 @@
   .tl-logout {
     font-size: 12px;
     padding: 8px 10px;
+    transition: all 0.3s ease;
   }
 }
+
+  .tl-logout:hover {
+    background: #f56063;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(255, 77, 79, 0.2);
+  }
+
+  .tl-logout:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(255, 77, 79, 0.2);
+  } 

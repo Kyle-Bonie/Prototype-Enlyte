@@ -19,12 +19,13 @@
   font-family: inherit;
   outline: none;
   white-space: nowrap;
+  transition: all 0.3s ease;
 }
 
 .clear-data-button:hover:not(:disabled) {
   background: #dc2626;
   color: #fff;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
 }
 

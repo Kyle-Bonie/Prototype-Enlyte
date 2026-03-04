@@ -312,17 +312,33 @@
 .hrd-btn--primary {
   background: #1e3a8a;
   color: #ffffff;
+  transition: all 0.3s ease;
 }
 
 .hrd-btn--primary:not(:disabled):hover {
   background: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(30, 58, 138, 0.3);
+}
+
+.hrd-btn--primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 8px 16px rgba(30, 58, 138, 0.2);
 }
 
 .hrd-btn--accent {
   background: #0f766e;
   color: #ffffff;
+  transition: all 0.3s ease;
 }
 
 .hrd-btn--accent:not(:disabled):hover {
   background: #0d9488;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(15, 118, 110, 0.3);
 }
+
+.hrd-btn--accent:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 8px 16px rgba(15, 118, 110, 0.2);
+} 
