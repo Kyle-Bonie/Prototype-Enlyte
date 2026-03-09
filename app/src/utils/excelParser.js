@@ -247,6 +247,7 @@ export const parseExcelFile = (file) => {
           caseObj.month = caseObj.month || "";
           caseObj.week = caseObj.week || "";
           caseObj.status = caseObj.status || "";
+          caseObj.caseStatus = "Untouched"; // Default status for new cases
 
           cases.push(caseObj);
         }

@@ -158,3 +158,13 @@ export const updateCasesStatus = async (updates) => {
   });
   await batch.commit();
 };
+
+/**
+ * Update the caseStatus field for a single case.
+ * @param {string} firestoreId - The Firestore document ID
+ * @param {string} newStatus - The new status value
+ */
+export const updateCaseStatus = async (firestoreId, newStatus) => {
+  const ref = doc(db, CASES_COLLECTION, firestoreId);
+  await setDoc(ref, { caseStatus: newStatus }, { merge: true });
+};

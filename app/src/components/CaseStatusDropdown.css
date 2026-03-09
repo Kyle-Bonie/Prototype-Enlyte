@@ -1,0 +1,70 @@
+.case-status-dropdown {
+  padding: 6px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background-color: #ffffff;
+  font-size: 14px;
+  font-family: inherit;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+  outline: none;
+}
+
+.case-status-dropdown:hover {
+  border-color: #9ca3af;
+  background-color: #f9fafb;
+}
+
+.case-status-dropdown:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background-color: #ffffff;
+}
+
+.case-status-dropdown option {
+  padding: 8px;
+  background-color: #ffffff;
+  color: #374151;
+}
+
+/* Status-specific styling when displayed in table */
+.case-status-dropdown[value="Untouched"] {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+.case-status-dropdown[value="Scheduled"] {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.case-status-dropdown[value="Closed"] {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.case-status-dropdown[value="Escalated"] {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.case-status-dropdown[value="Send Back"] {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.case-status-dropdown[value="Unassigned"] {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+  .case-status-dropdown {
+    min-width: 100px;
+    font-size: 13px;
+    padding: 5px 10px;
+  }
+}

@@ -11,7 +11,7 @@ import {
   updateUser,
   deleteUser,
 } from "./api/usersAPI";
-import { uploadCases, getAllCases, updateCasesAgent, clearAllCases } from "./api/casesAPI";
+import { uploadCases, getAllCases, updateCasesAgent, updateCaseStatus, clearAllCases } from "./api/casesAPI";
 import {
   subscribeHelpRequests,
   markHelpRequestRead,
@@ -21,6 +21,7 @@ import {
 import { parseExcelFile, deriveAgentSummary, HEADER_MAP, normalise } from "./utils/excelParser";
 import ClearDataButton from "./components/ClearDataButton";
 import RowsPerPageSelector from "./components/RowsPerPageSelector";
+import CaseStatusDropdown from "./components/CaseStatusDropdown";
 import "./DashboardTeamLead.css";
 
 function DashboardTeamLead({ username, onLogout }) {
@@ -407,6 +408,27 @@ function DashboardTeamLead({ username, onLogout }) {
     handleCloseAssign();
   };
 
+  // Handle case status change
+  const handleCaseStatusChange = async (firestoreId, newStatus) => {
+    try {
+      await updateCaseStatus(firestoreId, newStatus);
+      
+      // Update local state immediately
+      const updateStatusInList = (list) =>
+        list.map((c) => 
+          c.firestoreId === firestoreId 
+            ? { ...c, caseStatus: newStatus }
+            : c
+        );
+      
+      setCaseData((prev) => updateStatusInList(prev));
+      setCaseHistoryData((prev) => updateStatusInList(prev));
+    } catch (err) {
+      console.error("Failed to update case status:", err);
+      alert("Failed to update status. Please try again.");
+    }
+  };
+
   return (
     <div className="tl-dashboard">
       {/* Fixed header bar */}
@@ -672,13 +694,14 @@ function DashboardTeamLead({ username, onLogout }) {
                           {caseHeaders.map((header) => (
                             <th key={header}>{header}</th>
                           ))}
+                          {caseHeaders.length > 0 && <th>Status</th>}
                         </tr>
                       </thead>
                       <tbody>
                         {caseSearch.filteredData.length === 0 ? (
                           <tr>
                             <td
-                              colSpan={caseHeaders.length + 1 || 10}
+                              colSpan={caseHeaders.length + 2 || 11}
                               style={{
                                 textAlign: "center",
                                 padding: "40px",
@@ -723,6 +746,17 @@ function DashboardTeamLead({ username, onLogout }) {
                                     </td>
                                   );
                                 })}
+                                {caseHeaders.length > 0 && (
+                                  <td>
+                                    <CaseStatusDropdown
+                                      value={caseItem.caseStatus}
+                                      onChange={(newStatus) => 
+                                        handleCaseStatusChange(caseItem.firestoreId, newStatus)
+                                      }
+                                      caseId={caseItem.id}
+                                    />
+                                  </td>
+                                )}
                               </tr>
                             ),
                           )
@@ -913,13 +947,14 @@ function DashboardTeamLead({ username, onLogout }) {
                           {caseHeaders.map((header) => (
                             <th key={header}>{header}</th>
                           ))}
+                          {caseHeaders.length > 0 && <th>Status</th>}
                         </tr>
                       </thead>
                       <tbody>
                         {caseHistorySearch.filteredData.length === 0 ? (
                           <tr>
                             <td
-                              colSpan={caseHeaders.length || 9}
+                              colSpan={caseHeaders.length + 1 || 10}
                               style={{
                                 textAlign: "center",
                                 padding: "40px",
@@ -955,6 +990,17 @@ function DashboardTeamLead({ username, onLogout }) {
                                   </td>
                                 );
                               })}
+                              {caseHeaders.length > 0 && (
+                                <td>
+                                  <CaseStatusDropdown
+                                    value={caseItem.caseStatus}
+                                    onChange={(newStatus) => 
+                                      handleCaseStatusChange(caseItem.firestoreId, newStatus)
+                                    }
+                                    caseId={caseItem.id}
+                                  />
+                                </td>
+                              )}
                             </tr>
                           ))
                         )}
