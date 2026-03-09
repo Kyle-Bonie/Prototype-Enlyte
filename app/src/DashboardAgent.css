@@ -355,6 +355,7 @@
   padding: 16px;
   background: #ffffff;
   border-top: 1px solid #e2e8f0;
+  flex-wrap: wrap;
 }
 
 .tl-pagination-btn {

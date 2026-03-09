@@ -20,6 +20,7 @@ import {
 } from "./api/helpRequestsAPI";
 import { parseExcelFile, deriveAgentSummary, HEADER_MAP, normalise } from "./utils/excelParser";
 import ClearDataButton from "./components/ClearDataButton";
+import RowsPerPageSelector from "./components/RowsPerPageSelector";
 import "./DashboardTeamLead.css";
 
 function DashboardTeamLead({ username, onLogout }) {
@@ -68,7 +69,11 @@ function DashboardTeamLead({ username, onLogout }) {
   const [historyAgentPage, setHistoryAgentPage] = useState(1);
   const [historyCasePage, setHistoryCasePage] = useState(1);
   const [manageUserPage, setManageUserPage] = useState(1);
-  const itemsPerPage = 10;
+  const [agentSummaryItemsPerPage, setAgentSummaryItemsPerPage] = useState(10);
+  const [caseTableItemsPerPage, setCaseTableItemsPerPage] = useState(10);
+  const [historyAgentItemsPerPage, setHistoryAgentItemsPerPage] = useState(10);
+  const [historyCaseItemsPerPage, setHistoryCaseItemsPerPage] = useState(10);
+  const [manageUserItemsPerPage, setManageUserItemsPerPage] = useState(10);
   // Case data state - starts empty until file is uploaded
   const [caseData, setCaseData] = useState([]);
   // Column headers derived from the uploaded Excel file
@@ -296,13 +301,13 @@ function DashboardTeamLead({ username, onLogout }) {
   const availableAgents = users.filter((user) => user.role === "Agent");
 
   // Pagination helper functions
-  const paginate = (items, page) => {
+  const paginate = (items, page, itemsPerPage) => {
     const startIndex = (page - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     return items.slice(startIndex, endIndex);
   };
 
-  const totalPages = (items) => Math.ceil(items.length / itemsPerPage);
+  const totalPages = (items, itemsPerPage) => Math.ceil(items.length / itemsPerPage);
 
   // Agent summary: auto-derived from current case data
   const agentSummaryData = useMemo(() => deriveAgentSummary(caseData), [caseData]);
@@ -555,6 +560,7 @@ function DashboardTeamLead({ username, onLogout }) {
                           paginate(
                             agentSummarySearch.filteredData,
                             agentSummaryPage,
+                            agentSummaryItemsPerPage,
                           ).map((agent, index) => (
                             <tr key={index}>
                               <td>{agent.name}</td>
@@ -609,25 +615,32 @@ function DashboardTeamLead({ username, onLogout }) {
                     </button>
                     <span className="tl-pagination-info">
                       Page {agentSummaryPage} of{" "}
-                      {totalPages(agentSummarySearch.filteredData)}
+                      {totalPages(agentSummarySearch.filteredData, agentSummaryItemsPerPage)}
                     </span>
                     <button
                       className="tl-pagination-btn"
                       onClick={() =>
                         setAgentSummaryPage((prev) =>
                           Math.min(
-                            totalPages(agentSummarySearch.filteredData),
+                            totalPages(agentSummarySearch.filteredData, agentSummaryItemsPerPage),
                             prev + 1,
                           ),
                         )
                       }
                       disabled={
                         agentSummaryPage ===
-                        totalPages(agentSummarySearch.filteredData)
+                        totalPages(agentSummarySearch.filteredData, agentSummaryItemsPerPage)
                       }
                     >
                       Next
                     </button>
+                    <RowsPerPageSelector
+                      value={agentSummaryItemsPerPage}
+                      onChange={(newValue) => {
+                        setAgentSummaryItemsPerPage(newValue);
+                        setAgentSummaryPage(1);
+                      }}
+                    />
                   </div>
                 </section>
                 {/* Case table tile */}
@@ -677,7 +690,7 @@ function DashboardTeamLead({ username, onLogout }) {
                             </td>
                           </tr>
                         ) : (
-                          paginate(caseSearch.filteredData, caseTablePage).map(
+                          paginate(caseSearch.filteredData, caseTablePage, caseTableItemsPerPage).map(
                             (caseItem) => (
                               <tr
                                 key={caseItem.firestoreId || caseItem.id}
@@ -729,24 +742,31 @@ function DashboardTeamLead({ username, onLogout }) {
                     </button>
                     <span className="tl-pagination-info">
                       Page {caseTablePage} of{" "}
-                      {totalPages(caseSearch.filteredData)}
+                      {totalPages(caseSearch.filteredData, caseTableItemsPerPage)}
                     </span>
                     <button
                       className="tl-pagination-btn"
                       onClick={() =>
                         setCaseTablePage((prev) =>
                           Math.min(
-                            totalPages(caseSearch.filteredData),
+                            totalPages(caseSearch.filteredData, caseTableItemsPerPage),
                             prev + 1,
                           ),
                         )
                       }
                       disabled={
-                        caseTablePage === totalPages(caseSearch.filteredData)
+                        caseTablePage === totalPages(caseSearch.filteredData, caseTableItemsPerPage)
                       }
                     >
                       Next
                     </button>
+                    <RowsPerPageSelector
+                      value={caseTableItemsPerPage}
+                      onChange={(newValue) => {
+                        setCaseTableItemsPerPage(newValue);
+                        setCaseTablePage(1);
+                      }}
+                    />
                   </div>
                 </section>
               </>
@@ -793,6 +813,7 @@ function DashboardTeamLead({ username, onLogout }) {
                           paginate(
                             historyAgentSearch.filteredData,
                             historyAgentPage,
+                            historyAgentItemsPerPage
                           ).map((agent, index) => (
                             <tr key={index}>
                               <td>{agent.name}</td>
@@ -847,25 +868,32 @@ function DashboardTeamLead({ username, onLogout }) {
                     </button>
                     <span className="tl-pagination-info">
                       Page {historyAgentPage} of{" "}
-                      {totalPages(historyAgentSearch.filteredData)}
+                      {totalPages(historyAgentSearch.filteredData, historyAgentItemsPerPage)}
                     </span>
                     <button
                       className="tl-pagination-btn"
                       onClick={() =>
                         setHistoryAgentPage((prev) =>
                           Math.min(
-                            totalPages(historyAgentSearch.filteredData),
+                            totalPages(historyAgentSearch.filteredData, historyAgentItemsPerPage),
                             prev + 1,
                           ),
                         )
                       }
                       disabled={
                         historyAgentPage ===
-                        totalPages(historyAgentSearch.filteredData)
+                        totalPages(historyAgentSearch.filteredData, historyAgentItemsPerPage)
                       }
                     >
                       Next
                     </button>
+                    <RowsPerPageSelector
+                      value={historyAgentItemsPerPage}
+                      onChange={(newValue) => {
+                        setHistoryAgentItemsPerPage(newValue);
+                        setHistoryAgentPage(1);
+                      }}
+                    />
                   </div>
                 </section>
                 {/* Case History table */}
@@ -906,6 +934,7 @@ function DashboardTeamLead({ username, onLogout }) {
                           paginate(
                             caseHistorySearch.filteredData,
                             historyCasePage,
+                            historyCaseItemsPerPage
                           ).map((caseItem) => (
                             <tr
                               key={caseItem.firestoreId || caseItem.id}
@@ -944,26 +973,32 @@ function DashboardTeamLead({ username, onLogout }) {
                     </button>
                     <span className="tl-pagination-info">
                       Page {historyCasePage} of{" "}
-                      {totalPages(caseHistorySearch.filteredData)}
+                      {totalPages(caseHistorySearch.filteredData, historyCaseItemsPerPage)}
                     </span>
                     <button
                       className="tl-pagination-btn"
-                      x
                       onClick={() =>
                         setHistoryCasePage((prev) =>
                           Math.min(
-                            totalPages(caseHistorySearch.filteredData),
+                            totalPages(caseHistorySearch.filteredData, historyCaseItemsPerPage),
                             prev + 1,
                           ),
                         )
                       }
                       disabled={
                         historyCasePage ===
-                        totalPages(caseHistorySearch.filteredData)
+                        totalPages(caseHistorySearch.filteredData, historyCaseItemsPerPage)
                       }
                     >
                       Next
                     </button>
+                    <RowsPerPageSelector
+                      value={historyCaseItemsPerPage}
+                      onChange={(newValue) => {
+                        setHistoryCaseItemsPerPage(newValue);
+                        setHistoryCasePage(1);
+                      }}
+                    />
                   </div>
                 </section>
               </>
@@ -1147,7 +1182,7 @@ function DashboardTeamLead({ username, onLogout }) {
                             </td>
                           </tr>
                         ) : (
-                          paginate(users, manageUserPage).map((user) => (
+                          paginate(users, manageUserPage, manageUserItemsPerPage).map((user) => (
                             <tr key={user.id}>
                               <td>{user.employeeNumber}</td>
                               <td>{user.name}</td>
@@ -1188,19 +1223,26 @@ function DashboardTeamLead({ username, onLogout }) {
                       Previous
                     </button>
                     <span className="tl-pagination-info">
-                      Page {manageUserPage} of {totalPages(users)}
+                      Page {manageUserPage} of {totalPages(users, manageUserItemsPerPage)}
                     </span>
                     <button
                       className="tl-pagination-btn"
                       onClick={() =>
                         setManageUserPage((prev) =>
-                          Math.min(totalPages(users), prev + 1),
+                          Math.min(totalPages(users, manageUserItemsPerPage), prev + 1),
                         )
                       }
-                      disabled={manageUserPage === totalPages(users)}
+                      disabled={manageUserPage === totalPages(users, manageUserItemsPerPage)}
                     >
                       Next
                     </button>
+                    <RowsPerPageSelector
+                      value={manageUserItemsPerPage}
+                      onChange={(newValue) => {
+                        setManageUserItemsPerPage(newValue);
+                        setManageUserPage(1);
+                      }}
+                    />
                   </div>
                 </section>
               </>

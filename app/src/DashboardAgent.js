@@ -8,18 +8,18 @@ import { getUserByUsername } from "./api/usersAPI";
 import { HEADER_MAP, normalise } from "./utils/excelParser";
 import DashboardAgentChart from "./components/DashboardAgentChart";
 import SearchBar from "./components/SearchBar";
+import RowsPerPageSelector from "./components/RowsPerPageSelector";
 import useSearch from "./hooks/useSearch";
 import "./DashboardAgent.css";
 import "./components/MyRequests.css";
 
 // ─── Module-level constants ────────────────────────────────────────────────────
-const ITEMS_PER_PAGE = 5;
 const NOTIFICATION_SOUND =
   "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZijcIF2m98OScTgwPUKfj8LZjHAY4ktjyzXksBS";
 
-const paginate = (items, page) => {
-  const start = (page - 1) * ITEMS_PER_PAGE;
-  return items.slice(start, start + ITEMS_PER_PAGE);
+const paginate = (items, page, itemsPerPage) => {
+  const start = (page - 1) * itemsPerPage;
+  return items.slice(start, start + itemsPerPage);
 };
 
 const formatDateRange = (range) => {
@@ -57,7 +57,10 @@ const formatDateRange = (range) => {
 function DashboardAgent({ username, onLogout }) {
   // ── View ───────────────────────────────────────────────────────────────────
   const [activeView, setActiveView] = useState("cases");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [summaryCasesPage, setSummaryCasesPage] = useState(1);
+  const [caseTablePage, setCaseTablePage] = useState(1);
+  const [summaryCasesItemsPerPage, setSummaryCasesItemsPerPage] = useState(10);
+  const [caseTableItemsPerPage, setCaseTableItemsPerPage] = useState(10);
   const [dateRange, setDateRange] = useState("today");
 
   // ── Live case data from Firestore ─────────────────────────────────────────
@@ -201,15 +204,8 @@ function DashboardAgent({ username, onLogout }) {
   // Search for My Cases Summary table
   const summarySearch = useSearch(myCases, rawFilter);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(
-      (activeView === "summary"
-        ? summarySearch.filteredData
-        : caseTableSearch.filteredData
-      ).length / ITEMS_PER_PAGE
-    )
-  );
+  const totalPages = (items, itemsPerPage) =>
+    Math.max(1, Math.ceil(items.length / itemsPerPage));
 
   // Merge optimistic local status overrides so the chart reflects
   // "Mark as Done" instantly without waiting for Firestore round-trip.
@@ -427,7 +423,7 @@ function DashboardAgent({ username, onLogout }) {
                   </div>
                   <SearchBar
                     value={summarySearch.searchText}
-                    onChange={(val) => { summarySearch.setSearchText(val); setCurrentPage(1); }}
+                    onChange={(val) => { summarySearch.setSearchText(val); setSummaryCasesPage(1); }}
                     placeholder="Search cases..."
                   />
                   <div className="tl-table-wrap">
@@ -450,7 +446,7 @@ function DashboardAgent({ username, onLogout }) {
                             </td>
                           </tr>
                         ) : (
-                          paginate(summarySearch.filteredData, currentPage).map((caseItem) => (
+                          paginate(summarySearch.filteredData, summaryCasesPage, summaryCasesItemsPerPage).map((caseItem) => (
                             <tr
                               key={caseItem.firestoreId}
                               className={`tl-row ${
@@ -478,24 +474,31 @@ function DashboardAgent({ username, onLogout }) {
                     <button
                       className="tl-pagination-btn"
                       onClick={() =>
-                        setCurrentPage((prev) => Math.max(1, prev - 1))
+                        setSummaryCasesPage((prev) => Math.max(1, prev - 1))
                       }
-                      disabled={currentPage === 1}
+                      disabled={summaryCasesPage === 1}
                     >
                       Previous
                     </button>
                     <span className="tl-pagination-info">
-                      Page {currentPage} of {totalPages}
+                      Page {summaryCasesPage} of {totalPages(summarySearch.filteredData, summaryCasesItemsPerPage)}
                     </span>
                     <button
                       className="tl-pagination-btn"
                       onClick={() =>
-                        setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                        setSummaryCasesPage((prev) => Math.min(totalPages(summarySearch.filteredData, summaryCasesItemsPerPage), prev + 1))
                       }
-                      disabled={currentPage === totalPages}
+                      disabled={summaryCasesPage === totalPages(summarySearch.filteredData, summaryCasesItemsPerPage)}
                     >
                       Next
                     </button>
+                    <RowsPerPageSelector
+                      value={summaryCasesItemsPerPage}
+                      onChange={(newValue) => {
+                        setSummaryCasesItemsPerPage(newValue);
+                        setSummaryCasesPage(1);
+                      }}
+                    />
                   </div>
                 </section>
                 <DashboardAgentChart data={chartData} />
@@ -525,7 +528,7 @@ function DashboardAgent({ username, onLogout }) {
                 </div>
                 <SearchBar
                   value={caseTableSearch.searchText}
-                  onChange={(val) => { caseTableSearch.setSearchText(val); setCurrentPage(1); }}
+                  onChange={(val) => { caseTableSearch.setSearchText(val); setCaseTablePage(1); }}
                   placeholder="Search cases..."
                 />
                 <div className="tl-table-wrap">
@@ -549,7 +552,7 @@ function DashboardAgent({ username, onLogout }) {
                           </td>
                         </tr>
                       ) : (
-                        paginate(caseTableSearch.filteredData, currentPage).map((caseItem) => {
+                        paginate(caseTableSearch.filteredData, caseTablePage, caseTableItemsPerPage).map((caseItem) => {
                           const currentStatus = caseStatuses[caseItem.firestoreId] || caseItem.status;
                           return (
                             <tr
@@ -590,24 +593,31 @@ function DashboardAgent({ username, onLogout }) {
                   <button
                     className="tl-pagination-btn"
                     onClick={() =>
-                      setCurrentPage((prev) => Math.max(1, prev - 1))
+                      setCaseTablePage((prev) => Math.max(1, prev - 1))
                     }
-                    disabled={currentPage === 1}
+                    disabled={caseTablePage === 1}
                   >
                     Previous
                   </button>
                   <span className="tl-pagination-info">
-                    Page {currentPage} of {totalPages}
+                    Page {caseTablePage} of {totalPages(caseTableSearch.filteredData, caseTableItemsPerPage)}
                   </span>
                   <button
                     className="tl-pagination-btn"
                     onClick={() =>
-                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                      setCaseTablePage((prev) => Math.min(totalPages(caseTableSearch.filteredData, caseTableItemsPerPage), prev + 1))
                     }
-                    disabled={currentPage === totalPages}
+                    disabled={caseTablePage === totalPages(caseTableSearch.filteredData, caseTableItemsPerPage)}
                   >
                     Next
                   </button>
+                  <RowsPerPageSelector
+                    value={caseTableItemsPerPage}
+                    onChange={(newValue) => {
+                      setCaseTableItemsPerPage(newValue);
+                      setCaseTablePage(1);
+                    }}
+                  />
                 </div>
               </section>
             )}
