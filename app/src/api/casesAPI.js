@@ -168,3 +168,13 @@ export const updateCaseStatus = async (firestoreId, newStatus) => {
   const ref = doc(db, CASES_COLLECTION, firestoreId);
   await setDoc(ref, { caseStatus: newStatus }, { merge: true });
 };
+
+/**
+ * Update the reason field for a single case.
+ * @param {string} firestoreId - The Firestore document ID
+ * @param {string} reason - The reason text
+ */
+export const updateCaseReason = async (firestoreId, reason) => {
+  const ref = doc(db, CASES_COLLECTION, firestoreId);
+  await setDoc(ref, { reason: reason || "" }, { merge: true });
+};

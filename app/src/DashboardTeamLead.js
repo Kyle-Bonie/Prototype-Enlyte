@@ -22,6 +22,8 @@ import { parseExcelFile, deriveAgentSummary, HEADER_MAP, normalise } from "./uti
 import ClearDataButton from "./components/ClearDataButton";
 import RowsPerPageSelector from "./components/RowsPerPageSelector";
 import CaseStatusDropdown from "./components/CaseStatusDropdown";
+import ReasonCell from "./components/ReasonCell";
+import ReasonModal from "./components/ReasonModal";
 import "./DashboardTeamLead.css";
 
 function DashboardTeamLead({ username, onLogout }) {
@@ -79,6 +81,10 @@ function DashboardTeamLead({ username, onLogout }) {
   const [caseData, setCaseData] = useState([]);
   // Column headers derived from the uploaded Excel file
   const [caseHeaders, setCaseHeaders] = useState([]);
+
+  // Reason Modal state
+  const [reasonModalOpen, setReasonModalOpen] = useState(false);
+  const [reasonModalCase, setReasonModalCase] = useState(null);
 
   // Subscribe to live help requests from Firestore on mount
   useEffect(() => {
@@ -429,6 +435,12 @@ function DashboardTeamLead({ username, onLogout }) {
     }
   };
 
+  // Handle reason modal open (View only for Team Lead)
+  const handleOpenReasonModal = (caseItem) => {
+    setReasonModalCase(caseItem);
+    setReasonModalOpen(true);
+  };
+
   return (
     <div className="tl-dashboard">
       {/* Fixed header bar */}
@@ -695,13 +707,14 @@ function DashboardTeamLead({ username, onLogout }) {
                             <th key={header}>{header}</th>
                           ))}
                           {caseHeaders.length > 0 && <th>Status</th>}
+                          {caseHeaders.length > 0 && <th>Reason</th>}
                         </tr>
                       </thead>
                       <tbody>
                         {caseSearch.filteredData.length === 0 ? (
                           <tr>
                             <td
-                              colSpan={caseHeaders.length + 2 || 11}
+                              colSpan={caseHeaders.length + 3 || 12}
                               style={{
                                 textAlign: "center",
                                 padding: "40px",
@@ -747,15 +760,24 @@ function DashboardTeamLead({ username, onLogout }) {
                                   );
                                 })}
                                 {caseHeaders.length > 0 && (
-                                  <td>
-                                    <CaseStatusDropdown
-                                      value={caseItem.caseStatus}
-                                      onChange={(newStatus) => 
-                                        handleCaseStatusChange(caseItem.firestoreId, newStatus)
-                                      }
-                                      caseId={caseItem.id}
-                                    />
-                                  </td>
+                                  <>
+                                    <td>
+                                      <CaseStatusDropdown
+                                        value={caseItem.caseStatus}
+                                        onChange={(newStatus) => 
+                                          handleCaseStatusChange(caseItem.firestoreId, newStatus)
+                                        }
+                                        caseId={caseItem.id}
+                                      />
+                                    </td>
+                                    <td>
+                                      <ReasonCell
+                                        value={caseItem.reason || ""}
+                                        onClick={() => handleOpenReasonModal(caseItem)}
+                                        readOnly={true}
+                                      />
+                                    </td>
+                                  </>
                                 )}
                               </tr>
                             ),
@@ -948,13 +970,14 @@ function DashboardTeamLead({ username, onLogout }) {
                             <th key={header}>{header}</th>
                           ))}
                           {caseHeaders.length > 0 && <th>Status</th>}
+                          {caseHeaders.length > 0 && <th>Reason</th>}
                         </tr>
                       </thead>
                       <tbody>
                         {caseHistorySearch.filteredData.length === 0 ? (
                           <tr>
                             <td
-                              colSpan={caseHeaders.length + 1 || 10}
+                              colSpan={caseHeaders.length + 2 || 11}
                               style={{
                                 textAlign: "center",
                                 padding: "40px",
@@ -991,15 +1014,24 @@ function DashboardTeamLead({ username, onLogout }) {
                                 );
                               })}
                               {caseHeaders.length > 0 && (
-                                <td>
-                                  <CaseStatusDropdown
-                                    value={caseItem.caseStatus}
-                                    onChange={(newStatus) => 
-                                      handleCaseStatusChange(caseItem.firestoreId, newStatus)
-                                    }
-                                    caseId={caseItem.id}
-                                  />
-                                </td>
+                                <>
+                                  <td>
+                                    <CaseStatusDropdown
+                                      value={caseItem.caseStatus}
+                                      onChange={(newStatus) => 
+                                        handleCaseStatusChange(caseItem.firestoreId, newStatus)
+                                      }
+                                      caseId={caseItem.id}
+                                    />
+                                  </td>
+                                  <td>
+                                    <ReasonCell
+                                      value={caseItem.reason || ""}
+                                      onClick={() => handleOpenReasonModal(caseItem)}
+                                      readOnly={true}
+                                    />
+                                  </td>
+                                </>
                               )}
                             </tr>
                           ))
@@ -1455,6 +1487,14 @@ function DashboardTeamLead({ username, onLogout }) {
           </div>
         </div>
       ) : null}
+      {/* Reason Modal */}
+      <ReasonModal
+        isOpen={reasonModalOpen}
+        onClose={() => setReasonModalOpen(false)}
+        currentReason={reasonModalCase?.reason || ""}
+        caseId={reasonModalCase?.id || ""}
+        readOnly={true}
+      />
     </div>
   );
 };

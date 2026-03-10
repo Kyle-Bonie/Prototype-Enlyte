@@ -1,0 +1,251 @@
+.reason-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.reason-modal__content {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  width: 90%;
+  max-width: 560px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.reason-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.reason-modal__title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.reason-modal__close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  font-size: 28px;
+  color: #6b7280;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  line-height: 1;
+  padding: 0;
+}
+
+.reason-modal__close:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.reason-modal__body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.reason-modal__case-info {
+  margin-bottom: 20px;
+}
+
+.reason-modal__label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.reason-modal__case-id {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  padding: 10px 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.reason-modal__field {
+  margin-bottom: 0;
+}
+
+.reason-modal__textarea {
+  width: 100%;
+  padding: 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #1f2937;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  outline: none;
+  resize: vertical;
+  min-height: 120px;
+  transition: all 0.2s ease;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+
+.reason-modal__textarea:hover:not(:read-only) {
+  border-color: #9ca3af;
+}
+
+.reason-modal__textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.reason-modal__textarea:read-only {
+  background: #f9fafb;
+  cursor: default;
+}
+
+.reason-modal__textarea::placeholder {
+  color: #9ca3af;
+}
+
+.reason-modal__empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.reason-modal__empty-icon {
+  color: #d1d5db;
+  margin-bottom: 16px;
+}
+
+.reason-modal__empty-message {
+  font-size: 15px;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.reason-modal__footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 16px 24px 24px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.reason-modal__button {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.reason-modal__button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.reason-modal__button--primary {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+.reason-modal__button--primary:hover:not(:disabled) {
+  background: #2563eb;
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
+}
+
+.reason-modal__button--primary:active:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.reason-modal__button--secondary {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.reason-modal__button--secondary:hover:not(:disabled) {
+  background: #e5e7eb;
+}
+
+.reason-modal__button--secondary:active:not(:disabled) {
+  background: #d1d5db;
+}
+
+/* Responsive design */
+@media (max-width: 640px) {
+  .reason-modal__content {
+    width: 95%;
+    max-height: 95vh;
+  }
+
+  .reason-modal__header {
+    padding: 20px 20px 12px;
+  }
+
+  .reason-modal__title {
+    font-size: 18px;
+  }
+
+  .reason-modal__body {
+    padding: 20px;
+  }
+
+  .reason-modal__footer {
+    padding: 12px 20px 20px;
+    flex-direction: column-reverse;
+  }
+
+  .reason-modal__button {
+    width: 100%;
+  }
+}

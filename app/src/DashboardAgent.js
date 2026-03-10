@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import ApricusLogo from "./assets/ApricusLogo.png";
 import DashboardAgentNeedHelp from "./components/DashboardAgentNeedHelp";
 import MyRequests from "./components/MyRequests";
-import { subscribeCases, submitHelpRequest, updateCasesStatus, updateCaseStatus } from "./api/casesAPI";
+import { subscribeCases, submitHelpRequest, updateCasesStatus, updateCaseStatus, updateCaseReason } from "./api/casesAPI";
 import { subscribeAgentHelpRequests } from "./api/helpRequestsAPI";
 import { getUserByUsername } from "./api/usersAPI";
 import { HEADER_MAP, normalise } from "./utils/excelParser";
@@ -10,6 +10,8 @@ import DashboardAgentChart from "./components/DashboardAgentChart";
 import SearchBar from "./components/SearchBar";
 import RowsPerPageSelector from "./components/RowsPerPageSelector";
 import CaseStatusDropdown from "./components/CaseStatusDropdown";
+import ReasonCell from "./components/ReasonCell";
+import ReasonModal from "./components/ReasonModal";
 import useSearch from "./hooks/useSearch";
 import "./DashboardAgent.css";
 import "./components/MyRequests.css";
@@ -79,6 +81,10 @@ function DashboardAgent({ username, onLogout }) {
   // ── Other ─────────────────────────────────────────────────────────────────
   const [isNeedHelpOpen, setIsNeedHelpOpen] = useState(false);
   const [helpPreSelectedCaseId, setHelpPreSelectedCaseId] = useState("");
+
+  // ── Reason Modal ──────────────────────────────────────────────────────────
+  const [reasonModalOpen, setReasonModalOpen] = useState(false);
+  const [reasonModalCase, setReasonModalCase] = useState(null);
 
   // ── My Requests ───────────────────────────────────────────────────────────
   const [myRequests, setMyRequests] = useState([]);
@@ -357,6 +363,33 @@ function DashboardAgent({ username, onLogout }) {
     }
   };
 
+  // Handle reason modal open
+  const handleOpenReasonModal = (caseItem) => {
+    setReasonModalCase(caseItem);
+    setReasonModalOpen(true);
+  };
+
+  // Handle reason save from modal
+  const handleSaveReason = async (reason) => {
+    if (!reasonModalCase) return;
+    
+    try {
+      await updateCaseReason(reasonModalCase.firestoreId, reason);
+      
+      // Update local state immediately
+      setAllCases((prev) =>
+        prev.map((c) => 
+          c.firestoreId === reasonModalCase.firestoreId 
+            ? { ...c, reason }
+            : c
+        )
+      );
+    } catch (err) {
+      console.error("Failed to update reason:", err);
+      throw err;
+    }
+  };
+
   return (
     <div className="agent-dashboard">
       <header className="tl-topbar">
@@ -454,13 +487,14 @@ function DashboardAgent({ username, onLogout }) {
                             <th key={header}>{header}</th>
                           ))}
                           <th>Status</th>
+                          <th>Reason</th>
                         </tr>
                       </thead>
                       <tbody>
                         {summarySearch.filteredData.length === 0 ? (
                           <tr>
                             <td
-                              colSpan={caseHeaders.length + 1 || 9}
+                              colSpan={caseHeaders.length + 2 || 10}
                               style={{ textAlign: "center", padding: "40px", color: "#999", fontStyle: "italic" }}
                             >
                               {myCases.length === 0 ? "No cases assigned to you yet." : "No matching cases found."}
@@ -492,6 +526,12 @@ function DashboardAgent({ username, onLogout }) {
                                     handleCaseStatusChange(caseItem.firestoreId, newStatus)
                                   }
                                   caseId={caseItem.id}
+                                />
+                              </td>
+                              <td>
+                                <ReasonCell
+                                  value={caseItem.reason || ""}
+                                  onClick={() => handleOpenReasonModal(caseItem)}
                                 />
                               </td>
                             </tr>
@@ -570,13 +610,14 @@ function DashboardAgent({ username, onLogout }) {
                           <th key={header}>{header}</th>
                         ))}
                         <th>Status</th>
+                        <th>Reason</th>
                       </tr>
                     </thead>
                     <tbody>
                       {caseTableSearch.filteredData.length === 0 ? (
                         <tr>
                           <td
-                            colSpan={caseHeaders.length + 2 || 10}
+                            colSpan={caseHeaders.length + 3 || 11}
                             style={{ textAlign: "center", padding: "40px", color: "#999", fontStyle: "italic" }}
                           >
                             {myCases.length === 0 ? "No cases assigned to you yet." : "No matching cases found."}
@@ -620,6 +661,12 @@ function DashboardAgent({ username, onLogout }) {
                                     handleCaseStatusChange(caseItem.firestoreId, newStatus)
                                   }
                                   caseId={caseItem.id}
+                                />
+                              </td>
+                              <td>
+                                <ReasonCell
+                                  value={caseItem.reason || ""}
+                                  onClick={() => handleOpenReasonModal(caseItem)}
                                 />
                               </td>
                             </tr>
@@ -801,6 +848,15 @@ function DashboardAgent({ username, onLogout }) {
           </div>
         </div>
       )}
+      {/* Reason Modal */}
+      <ReasonModal
+        isOpen={reasonModalOpen}
+        onClose={() => setReasonModalOpen(false)}
+        onSave={handleSaveReason}
+        currentReason={reasonModalCase?.reason || ""}
+        caseId={reasonModalCase?.id || ""}
+        readOnly={false}
+      />
     </div>
   );
 }

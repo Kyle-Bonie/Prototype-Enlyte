@@ -1,0 +1,102 @@
+.reason-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: transparent;
+  white-space: nowrap;
+}
+
+.reason-cell__icon {
+  flex-shrink: 0;
+}
+
+.reason-cell__text {
+  line-height: 1;
+}
+
+/* Add Reason style - Blue */
+.reason-cell--add {
+  color: #2563eb;
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.reason-cell--add:hover {
+  color: #1d4ed8;
+  border-color: #93c5fd;
+  background: #dbeafe;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.1);
+}
+
+.reason-cell--add:active {
+  background: #bfdbfe;
+  transform: translateY(1px);
+}
+
+/* Modify Reason style - Amber */
+.reason-cell--modify {
+  color: #d97706;
+  border-color: #fde68a;
+  background: #fef3c7;
+}
+
+.reason-cell--modify:hover {
+  color: #b45309;
+  border-color: #fcd34d;
+  background: #fde68a;
+  box-shadow: 0 1px 2px rgba(217, 119, 6, 0.1);
+}
+
+.reason-cell--modify:active {
+  background: #fcd34d;
+  transform: translateY(1px);
+}
+
+/* View Reason style - Slate */
+.reason-cell--view {
+  color: #475569;
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+}
+
+.reason-cell--view:hover {
+  color: #334155;
+  border-color: #94a3b8;
+  background: #e2e8f0;
+  box-shadow: 0 1px 2px rgba(71, 85, 105, 0.1);
+}
+
+.reason-cell--view:active {
+  background: #cbd5e1;
+  transform: translateY(1px);
+}
+
+/* Focus styles for accessibility */
+.reason-cell:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.reason-cell:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Disabled state (if needed) */
+.reason-cell:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.reason-cell:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
