@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import ApricusLogo from "./assets/ApricusLogo.png";
 import SearchBar from "./components/SearchBar";
 import HelpRequestDetail from "./components/HelpRequestDetail";
-import { PieChart, TATColumnChart } from "./components/DashboardTeamLeadCharts";
+import { PieChart, StatusSuccessRateChart } from "./components/DashboardTeamLeadCharts";
 import NotificationCarousel from "./components/NotificationCarousel";
 import useSearch from "./hooks/useSearch";
 import {
@@ -540,10 +540,10 @@ function DashboardTeamLead({ username, onLogout }) {
                     {casesLoading ? <p style={{ color: "#999", fontStyle: "italic", padding: "16px" }}>Loading cases...</p> : null}
                     <div className="tl-tile-header">
                       <h2 className="tl-tile-title">
-                        Met and Not Met Cases Count
+                        Success Rate
                       </h2>
                     </div>
-                    <TATColumnChart data={caseData} />
+                    <StatusSuccessRateChart data={caseData} />
                   </section>
                   {/* Agent workload pie chart */}
                   <section className="tl-tile">

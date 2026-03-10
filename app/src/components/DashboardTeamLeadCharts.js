@@ -139,8 +139,8 @@ export function PieChart({ data }) {
   );
 }
 
-// Column Chart Component for TAT Status
-export function TATColumnChart({ data }) {
+// Column Chart Component for Status Success Rate
+export function StatusSuccessRateChart({ data }) {
   // If no data, show empty state
   if (!data || data.length === 0) {
     return (
@@ -150,203 +150,145 @@ export function TATColumnChart({ data }) {
     );
   }
 
-  // Calculate Met and Not Met counts
-  const metCount = data.filter((item) => item.status === "Met").length;
-  const notMetCount = data.filter((item) => item.status === "Not Met").length;
+  // Status options from CaseStatusDropdown
+  const statusOptions = ["Untouched", "Scheduled", "Closed", "Escalated", "Send Back", "Unassigned"];
+  
+  // Calculate count for each status (using caseStatus field)
+  const statusCounts = statusOptions.map(status => ({
+    status,
+    count: data.filter((item) => item.caseStatus === status).length
+  }));
+
   const total = data.length;
+  const scheduledCount = statusCounts.find(s => s.status === "Scheduled")?.count || 0;
+  
+  // Calculate success rate (Scheduled cases / Total cases)
+  const successRate = total > 0 ? ((scheduledCount / total) * 100).toFixed(1) : 0;
 
-  // Calculate percentages
-  const metPercentage = ((metCount / total) * 100).toFixed(1);
-  const notMetPercentage = ((notMetCount / total) * 100).toFixed(1);
-
-  // Calculate bar heights (max 100%)
+  // Find max count for scaling
+  const maxCount = Math.max(...statusCounts.map(s => s.count), 1);
   const maxHeight = 200;
-  const metHeight = (metCount / total) * maxHeight;
-  const notMetHeight = (notMetCount / total) * maxHeight;
+
+  // Define colors for each status
+  const statusColors = {
+    "Untouched": "#9ca3af",
+    "Scheduled": "#3b82f6",
+    "Closed": "#10b981",
+    "Escalated": "#f59e0b",
+    "Send Back": "#ef4444",
+    "Unassigned": "#6b7280"
+  };
+
+  // Calculate bar positions
+  const barWidth = 30;
+  const barSpacing = 10;
+  const startX = 50;
 
   return (
     <div className="column-chart-container">
-      <div className="column-chart-title">TAT Performance</div>
       <svg
-        viewBox="0 0 300 280"
+        viewBox="0 0 350 310"
         className="column-chart-svg"
-        aria-label="TAT Met vs Not Met column chart"
+        aria-label="Case status distribution column chart"
       >
         {/* Grid lines */}
-        <line
-          x1="50"
-          y1="220"
-          x2="250"
-          y2="220"
-          stroke="#e5e7eb"
-          strokeWidth="1"
-        />
-        <line
-          x1="50"
-          y1="170"
-          x2="250"
-          y2="170"
-          stroke="#e5e7eb"
-          strokeWidth="1"
-          strokeDasharray="2,2"
-        />
-        <line
-          x1="50"
-          y1="120"
-          x2="250"
-          y2="120"
-          stroke="#e5e7eb"
-          strokeWidth="1"
-          strokeDasharray="2,2"
-        />
-        <line
-          x1="50"
-          y1="70"
-          x2="250"
-          y2="70"
-          stroke="#e5e7eb"
-          strokeWidth="1"
-          strokeDasharray="2,2"
-        />
-        <line
-          x1="50"
-          y1="20"
-          x2="250"
-          y2="20"
-          stroke="#e5e7eb"
-          strokeWidth="1"
-          strokeDasharray="2,2"
-        />
+        <line x1="30" y1="220" x2="320" y2="220" stroke="#e5e7eb" strokeWidth="1" />
+        <line x1="30" y1="170" x2="320" y2="170" stroke="#e5e7eb" strokeWidth="1" strokeDasharray="2,2" />
+        <line x1="30" y1="120" x2="320" y2="120" stroke="#e5e7eb" strokeWidth="1" strokeDasharray="2,2" />
+        <line x1="30" y1="70" x2="320" y2="70" stroke="#e5e7eb" strokeWidth="1" strokeDasharray="2,2" />
+        <line x1="30" y1="20" x2="320" y2="20" stroke="#e5e7eb" strokeWidth="1" strokeDasharray="2,2" />
 
-        {/* Met Bar */}
-        <g className="column-bar">
-          <rect
-            x="80"
-            y={220 - metHeight}
-            width="60"
-            height={metHeight}
-            fill="#10b981"
-            className="column-bar-rect"
-            rx="4"
-          >
-            <title>
-              Met: {metCount} cases ({metPercentage}%)
-            </title>
-          </rect>
-          <text
-            x="110"
-            y={210 - metHeight}
-            textAnchor="middle"
-            className="column-value"
-            fill="#374151"
-            fontWeight="600"
-          >
-            {metCount}
-          </text>
-        </g>
+        {/* Status Bars */}
+        {statusCounts.map((item, index) => {
+          const barHeight = (item.count / maxCount) * maxHeight;
+          const x = startX + index * (barWidth + barSpacing);
+          const y = 220 - barHeight;
+          const percentage = ((item.count / total) * 100).toFixed(1);
 
-        {/* Not Met Bar */}
-        <g className="column-bar">
-          <rect
-            x="160"
-            y={220 - notMetHeight}
-            width="60"
-            height={notMetHeight}
-            fill="#ef4444"
-            className="column-bar-rect"
-            rx="4"
-          >
-            <title>
-              Not Met: {notMetCount} cases ({notMetPercentage}%)
-            </title>
-          </rect>
-          <text
-            x="190"
-            y={210 - notMetHeight}
-            textAnchor="middle"
-            className="column-value"
-            fill="#374151"
-            fontWeight="600"
-          >
-            {notMetCount}
-          </text>
-        </g>
+          return (
+            <g key={item.status} className="column-bar">
+              <rect
+                x={x}
+                y={y}
+                width={barWidth}
+                height={barHeight}
+                fill={statusColors[item.status]}
+                className="column-bar-rect"
+                rx="3"
+              >
+                <title>{item.status}: {item.count} cases ({percentage}%)</title>
+              </rect>
+              {item.count > 0 && (
+                <text
+                  x={x + barWidth / 2}
+                  y={y - 5}
+                  textAnchor="middle"
+                  className="column-value"
+                  fill="#374151"
+                  fontWeight="600"
+                  fontSize="11"
+                >
+                  {item.count}
+                </text>
+              )}
+            </g>
+          );
+        })}
 
         {/* X-axis labels */}
-        <text
-          x="110"
-          y="245"
-          textAnchor="middle"
-          className="column-label"
-          fill="#6b7280"
-        >
-          Met
-        </text>
-        <text
-          x="190"
-          y="245"
-          textAnchor="middle"
-          className="column-label"
-          fill="#6b7280"
-        >
-          Not Met
-        </text>
+        {statusCounts.map((item, index) => {
+          const x = startX + index * (barWidth + barSpacing) + barWidth / 2;
+          
+          return (
+            <text
+              key={item.status}
+              x={x}
+              y="235"
+              textAnchor="end"
+              className="column-label"
+              fill="#6b7280"
+              fontSize="8"
+              transform={`rotate(-45 ${x} 235)`}
+            >
+              {item.status}
+            </text>
+          );
+        })}
 
-        {/* Y-axis label */}
-        <text
-          x="30"
-          y="220"
-          textAnchor="middle"
-          className="column-axis-label"
-          fill="#9ca3af"
-          fontSize="10"
-        >
-          0
+        {/* Y-axis labels */}
+        <text x="15" y="220" textAnchor="middle" className="column-axis-label" fill="#9ca3af" fontSize="10">0</text>
+        <text x="15" y="120" textAnchor="middle" className="column-axis-label" fill="#9ca3af" fontSize="10">
+          {Math.round(maxCount / 2)}
         </text>
-        <text
-          x="30"
-          y="120"
-          textAnchor="middle"
-          className="column-axis-label"
-          fill="#9ca3af"
-          fontSize="10"
-        >
-          {Math.round(total / 2)}
-        </text>
-        <text
-          x="30"
-          y="20"
-          textAnchor="middle"
-          className="column-axis-label"
-          fill="#9ca3af"
-          fontSize="10"
-        >
-          {total}
+        <text x="15" y="20" textAnchor="middle" className="column-axis-label" fill="#9ca3af" fontSize="10">
+          {maxCount}
         </text>
       </svg>
 
       {/* Statistics */}
       <div className="column-chart-stats">
-        <div className="stat-item stat-met">
-          <div className="stat-color" style={{ backgroundColor: "#10b981" }} />
-          <span className="stat-label">Met TAT</span>
-          <span className="stat-value">
-            {metCount} ({metPercentage}%)
-          </span>
-        </div>
-        <div className="stat-item stat-not-met">
-          <div className="stat-color" style={{ backgroundColor: "#ef4444" }} />
-          <span className="stat-label">Not Met TAT</span>
-          <span className="stat-value">
-            {notMetCount} ({notMetPercentage}%)
-          </span>
-        </div>
+        {statusCounts.map((item) => {
+          const percentage = ((item.count / total) * 100).toFixed(1);
+          return (
+            <div key={item.status} className="stat-item">
+              <div className="stat-color" style={{ backgroundColor: statusColors[item.status] }} />
+              <span className="stat-label">{item.status}</span>
+              <span className="stat-value">{item.count} ({percentage}%)</span>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Total Cases */}
+      {/* Success Rate & Total Cases */}
       <div className="column-chart-total">
-        <span className="total-label">Total Cases:</span>
-        <span className="total-value">{total}</span>
+        <div className="total-section">
+          <span className="total-label">Total Cases:</span>
+          <span className="total-value">{total}</span>
+        </div>
+        <div className="success-rate-section">
+          <span className="success-rate-label">Success Rate:</span>
+          <span className="success-rate-value">{successRate}%</span>
+        </div>
       </div>
     </div>
   );
@@ -355,7 +297,7 @@ export function TATColumnChart({ data }) {
 // Default export (for backward compatibility)
 function DashboardTeamLeadCharts({ data, type = "pie" }) {
   if (type === "column") {
-    return <TATColumnChart data={data} />;
+    return <StatusSuccessRateChart data={data} />;
   }
   return <PieChart data={data} />;
 }

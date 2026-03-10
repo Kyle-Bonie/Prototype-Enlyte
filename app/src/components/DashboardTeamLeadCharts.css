@@ -106,13 +106,6 @@
   width: 100%;
 }
 
-.column-chart-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #374151;
-  text-align: center;
-}
-
 .column-chart-svg {
   width: 100%;
   max-width: 300px;
@@ -187,9 +180,9 @@
 
 .column-chart-total {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
   margin-top: 12px;
   background: #f9fafb;
   border-radius: 8px;
@@ -204,7 +197,15 @@
   border-color: #d1d5db;
 }
 
-.total-label {
+.total-section,
+.success-rate-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.total-label,
+.success-rate-label {
   font-size: 14px;
   font-weight: 600;
   color: #374151;
@@ -218,11 +219,26 @@
   font-size: 16px;
 }
 
+.success-rate-label::before {
+  content: "✅";
+  font-size: 16px;
+}
+
 .total-value {
   font-size: 24px;
   font-weight: 700;
   color: #1e3a8a;
   background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.success-rate-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #10b981;
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

@@ -474,6 +474,7 @@ function DashboardAgent({ username, onLogout }) {
               </section>
             ) : activeView === "summary" ? (
               <>
+                <DashboardAgentChart data={chartData} />
                 <section className="tl-tile tl-table-tile">
                   <div className="tl-tile-header">
                     <h2 className="tl-tile-title">My Cases Summary</h2>
@@ -601,7 +602,6 @@ function DashboardAgent({ username, onLogout }) {
                     />
                   </div>
                 </section>
-                <DashboardAgentChart data={chartData} />
               </>
             ) : (
               <section className="tl-tile tl-table-tile">
