@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import ApricusLogo from "./assets/ApricusLogo.png";
 import DashboardAgentNeedHelp from "./components/DashboardAgentNeedHelp";
 import MyRequests from "./components/MyRequests";
-import { subscribeCases, submitHelpRequest, updateCasesStatus, updateCaseStatus, updateCaseReason } from "./api/casesAPI";
+import { subscribeCases, submitHelpRequest, updateCasesStatus, updateCaseStatus, updateCaseReason, updateProviderName } from "./api/casesAPI";
 import { subscribeAgentHelpRequests } from "./api/helpRequestsAPI";
 import { getUserByUsername } from "./api/usersAPI";
 import { HEADER_MAP, normalise } from "./utils/excelParser";
@@ -12,6 +12,7 @@ import RowsPerPageSelector from "./components/RowsPerPageSelector";
 import CaseStatusDropdown from "./components/CaseStatusDropdown";
 import ReasonCell from "./components/ReasonCell";
 import ReasonModal from "./components/ReasonModal";
+import ProviderNameCell from "./components/ProviderNameCell";
 import useSearch from "./hooks/useSearch";
 import "./DashboardAgent.css";
 import "./components/MyRequests.css";
@@ -390,6 +391,25 @@ function DashboardAgent({ username, onLogout }) {
     }
   };
 
+  // Handle provider name change
+  const handleProviderNameChange = async (firestoreId, providerName) => {
+    try {
+      await updateProviderName(firestoreId, providerName);
+      
+      // Update local state immediately
+      setAllCases((prev) =>
+        prev.map((c) => 
+          c.firestoreId === firestoreId 
+            ? { ...c, providerName }
+            : c
+        )
+      );
+    } catch (err) {
+      console.error("Failed to update provider name:", err);
+      throw err;
+    }
+  };
+
   return (
     <div className="agent-dashboard">
       <header className="tl-topbar">
@@ -487,6 +507,7 @@ function DashboardAgent({ username, onLogout }) {
                             <th key={header}>{header}</th>
                           ))}
                           <th>Status</th>
+                          <th>Provider Name</th>
                           <th>Reason</th>
                         </tr>
                       </thead>
@@ -494,7 +515,7 @@ function DashboardAgent({ username, onLogout }) {
                         {summarySearch.filteredData.length === 0 ? (
                           <tr>
                             <td
-                              colSpan={caseHeaders.length + 2 || 10}
+                              colSpan={caseHeaders.length + 3 || 11}
                               style={{ textAlign: "center", padding: "40px", color: "#999", fontStyle: "italic" }}
                             >
                               {myCases.length === 0 ? "No cases assigned to you yet." : "No matching cases found."}
@@ -524,6 +545,15 @@ function DashboardAgent({ username, onLogout }) {
                                   value={caseItem.caseStatus}
                                   onChange={(newStatus) => 
                                     handleCaseStatusChange(caseItem.firestoreId, newStatus)
+                                  }
+                                  caseId={caseItem.id}
+                                />
+                              </td>
+                              <td>
+                                <ProviderNameCell
+                                  value={caseItem.providerName || ""}
+                                  onChange={(providerName) => 
+                                    handleProviderNameChange(caseItem.firestoreId, providerName)
                                   }
                                   caseId={caseItem.id}
                                 />
@@ -609,15 +639,14 @@ function DashboardAgent({ username, onLogout }) {
                         {caseHeaders.map((header) => (
                           <th key={header}>{header}</th>
                         ))}
-                        <th>Status</th>
-                        <th>Reason</th>
+                        <th>Status</th>                        <th>Provider Name</th>                        <th>Reason</th>
                       </tr>
                     </thead>
                     <tbody>
                       {caseTableSearch.filteredData.length === 0 ? (
                         <tr>
                           <td
-                            colSpan={caseHeaders.length + 3 || 11}
+                            colSpan={caseHeaders.length + 4 || 12}
                             style={{ textAlign: "center", padding: "40px", color: "#999", fontStyle: "italic" }}
                           >
                             {myCases.length === 0 ? "No cases assigned to you yet." : "No matching cases found."}
@@ -659,6 +688,15 @@ function DashboardAgent({ username, onLogout }) {
                                   value={caseItem.caseStatus}
                                   onChange={(newStatus) => 
                                     handleCaseStatusChange(caseItem.firestoreId, newStatus)
+                                  }
+                                  caseId={caseItem.id}
+                                />
+                              </td>
+                              <td>
+                                <ProviderNameCell
+                                  value={caseItem.providerName || ""}
+                                  onChange={(providerName) => 
+                                    handleProviderNameChange(caseItem.firestoreId, providerName)
                                   }
                                   caseId={caseItem.id}
                                 />

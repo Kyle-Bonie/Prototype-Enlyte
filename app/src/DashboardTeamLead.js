@@ -24,6 +24,7 @@ import RowsPerPageSelector from "./components/RowsPerPageSelector";
 import CaseStatusDropdown from "./components/CaseStatusDropdown";
 import ReasonCell from "./components/ReasonCell";
 import ReasonModal from "./components/ReasonModal";
+import ProviderNameCell from "./components/ProviderNameCell";
 import "./DashboardTeamLead.css";
 
 function DashboardTeamLead({ username, onLogout }) {
@@ -707,6 +708,7 @@ function DashboardTeamLead({ username, onLogout }) {
                             <th key={header}>{header}</th>
                           ))}
                           {caseHeaders.length > 0 && <th>Status</th>}
+                          {caseHeaders.length > 0 && <th>Provider Name</th>}
                           {caseHeaders.length > 0 && <th>Reason</th>}
                         </tr>
                       </thead>
@@ -714,7 +716,7 @@ function DashboardTeamLead({ username, onLogout }) {
                         {caseSearch.filteredData.length === 0 ? (
                           <tr>
                             <td
-                              colSpan={caseHeaders.length + 3 || 12}
+                              colSpan={caseHeaders.length + 4 || 13}
                               style={{
                                 textAlign: "center",
                                 padding: "40px",
@@ -767,6 +769,13 @@ function DashboardTeamLead({ username, onLogout }) {
                                         onChange={(newStatus) => 
                                           handleCaseStatusChange(caseItem.firestoreId, newStatus)
                                         }
+                                        caseId={caseItem.id}
+                                      />
+                                    </td>
+                                    <td>
+                                      <ProviderNameCell
+                                        value={caseItem.providerName || ""}
+                                        readOnly={true}
                                         caseId={caseItem.id}
                                       />
                                     </td>
@@ -970,6 +979,7 @@ function DashboardTeamLead({ username, onLogout }) {
                             <th key={header}>{header}</th>
                           ))}
                           {caseHeaders.length > 0 && <th>Status</th>}
+                          {caseHeaders.length > 0 && <th>Provider Name</th>}
                           {caseHeaders.length > 0 && <th>Reason</th>}
                         </tr>
                       </thead>
@@ -977,7 +987,7 @@ function DashboardTeamLead({ username, onLogout }) {
                         {caseHistorySearch.filteredData.length === 0 ? (
                           <tr>
                             <td
-                              colSpan={caseHeaders.length + 2 || 11}
+                              colSpan={caseHeaders.length + 3 || 12}
                               style={{
                                 textAlign: "center",
                                 padding: "40px",
@@ -1021,6 +1031,13 @@ function DashboardTeamLead({ username, onLogout }) {
                                       onChange={(newStatus) => 
                                         handleCaseStatusChange(caseItem.firestoreId, newStatus)
                                       }
+                                      caseId={caseItem.id}
+                                    />
+                                  </td>
+                                  <td>
+                                    <ProviderNameCell
+                                      value={caseItem.providerName || ""}
+                                      readOnly={true}
                                       caseId={caseItem.id}
                                     />
                                   </td>
