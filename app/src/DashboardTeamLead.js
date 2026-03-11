@@ -65,8 +65,6 @@ function DashboardTeamLead({ username, onLogout }) {
   const [selectedNotification, setSelectedNotification] = useState(null);
   // Live help requests from Firestore (replaces STATIC_NOTIFICATIONS)
   const [helpRequests, setHelpRequests] = useState([]);
-  // Hide carousel once the user has visited the notification page
-  const [notificationPageVisited, setNotificationPageVisited] = useState(false);
   // Pagination states
   const [agentSummaryPage, setAgentSummaryPage] = useState(1);
   const [caseTablePage, setCaseTablePage] = useState(1);
@@ -131,10 +129,6 @@ function DashboardTeamLead({ username, onLogout }) {
   // Sidebar navigation handler.
   const handleSelectView = (view) => {
     setActiveView(view);
-    // Mark notification page as visited when opened
-    if (view === "notification") {
-      setNotificationPageVisited(true);
-    }
   };
 
   // Page heading derived from current view.
@@ -505,7 +499,7 @@ function DashboardTeamLead({ username, onLogout }) {
         <main className="tl-main">
           <NotificationCarousel
             notifications={helpRequests}
-            isVisible={!notificationPageVisited}
+            isVisible={activeView !== "notification"}
             onNotificationClick={() => handleSelectView("notification")}
           />
           <div className="tl-content">

@@ -126,6 +126,7 @@ export const submitHelpRequest = async ({ caseId, reason, agentUsername }) => {
     reason,
     agentUsername,
     status: "pending",
+    read: false,
     createdAt: serverTimestamp(),
   });
 };
