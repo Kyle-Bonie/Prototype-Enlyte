@@ -11,7 +11,7 @@ import {
   updateUser,
   deleteUser,
 } from "./api/usersAPI";
-import { uploadCases, getAllCases, updateCasesAgent, updateCaseStatus, clearAllCases } from "./api/casesAPI";
+import { uploadCases, subscribeCases, updateCasesAgent, updateCaseStatus, clearAllCases } from "./api/casesAPI";
 import {
   subscribeHelpRequests,
   markHelpRequestRead,
@@ -111,26 +111,21 @@ function DashboardTeamLead({ username, onLogout }) {
     loadUsers();
   }, []);
 
-  // Load cases from Firestore on mount
+  // Load cases from Firestore with real-time updates
   useEffect(() => {
-    const loadCases = async () => {
-      setCasesLoading(true);
-      setCasesError("");
-      try {
-        const { cases: data, headers } = await getAllCases();
-        if (data.length > 0) {
-          setCaseData(data);
-          setCaseHistoryData(data);
-          setCaseHeaders(headers);
-        }
-      } catch (err) {
-        setCasesError("Failed to load cases.");
-        console.error(err);
-      } finally {
-        setCasesLoading(false);
+    setCasesLoading(true);
+    setCasesError("");
+    
+    const unsub = subscribeCases(({ cases, headers }) => {
+      if (cases.length > 0) {
+        setCaseData(cases);
+        setCaseHistoryData(cases);
+        setCaseHeaders(headers);
       }
-    };
-    loadCases();
+      setCasesLoading(false);
+    });
+
+    return () => unsub();
   }, []);
 
   // Sidebar navigation handler.
@@ -442,6 +437,15 @@ function DashboardTeamLead({ username, onLogout }) {
     setReasonModalOpen(true);
   };
 
+  // Format seconds to HH:MM:SS for display
+  const formatTimeSpent = (totalSeconds) => {
+    if (!totalSeconds) return "00:00:00";
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  };
+
   return (
     <div className="tl-dashboard">
       {/* Fixed header bar */}
@@ -710,13 +714,14 @@ function DashboardTeamLead({ username, onLogout }) {
                           {caseHeaders.length > 0 && <th>Status</th>}
                           {caseHeaders.length > 0 && <th>Provider Name</th>}
                           {caseHeaders.length > 0 && <th>Reason</th>}
+                          {caseHeaders.length > 0 && <th>Time Spent</th>}
                         </tr>
                       </thead>
                       <tbody>
                         {caseSearch.filteredData.length === 0 ? (
                           <tr>
                             <td
-                              colSpan={caseHeaders.length + 4 || 13}
+                              colSpan={caseHeaders.length + 5 || 14}
                               style={{
                                 textAlign: "center",
                                 padding: "40px",
@@ -785,6 +790,9 @@ function DashboardTeamLead({ username, onLogout }) {
                                         onClick={() => handleOpenReasonModal(caseItem)}
                                         readOnly={true}
                                       />
+                                    </td>
+                                    <td style={{ fontFamily: "'Courier New', monospace", fontSize: "13px", fontWeight: "500" }}>
+                                      {formatTimeSpent(caseItem.timeSpent || 0)}
                                     </td>
                                   </>
                                 )}
@@ -981,13 +989,14 @@ function DashboardTeamLead({ username, onLogout }) {
                           {caseHeaders.length > 0 && <th>Status</th>}
                           {caseHeaders.length > 0 && <th>Provider Name</th>}
                           {caseHeaders.length > 0 && <th>Reason</th>}
+                          {caseHeaders.length > 0 && <th>Time Spent</th>}
                         </tr>
                       </thead>
                       <tbody>
                         {caseHistorySearch.filteredData.length === 0 ? (
                           <tr>
                             <td
-                              colSpan={caseHeaders.length + 3 || 12}
+                              colSpan={caseHeaders.length + 4 || 13}
                               style={{
                                 textAlign: "center",
                                 padding: "40px",
@@ -1047,6 +1056,9 @@ function DashboardTeamLead({ username, onLogout }) {
                                       onClick={() => handleOpenReasonModal(caseItem)}
                                       readOnly={true}
                                     />
+                                  </td>
+                                  <td style={{ fontFamily: "'Courier New', monospace", fontSize: "13px", fontWeight: "500" }}>
+                                    {formatTimeSpent(caseItem.timeSpent || 0)}
                                   </td>
                                 </>
                               )}
@@ -1422,12 +1434,7 @@ function DashboardTeamLead({ username, onLogout }) {
                         try {
                           const { cases, headers } = await parseExcelFile(uploadedFile);
                           await uploadCases(cases, headers);
-                          const { cases: allData, headers: allHeaders } = await getAllCases();
-                          if (allData.length > 0) {
-                            setCaseData(allData);
-                            setCaseHistoryData(allData);
-                            setCaseHeaders(allHeaders);
-                          }
+                          // Real-time subscription will update automatically
                           alert(`"${uploadedFile.name}" saved! ${cases.length} cases imported.`);
                           setUploadedFile(null);
                           setUploadError("");

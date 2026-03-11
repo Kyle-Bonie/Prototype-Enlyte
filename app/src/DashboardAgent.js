@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import ApricusLogo from "./assets/ApricusLogo.png";
 import DashboardAgentNeedHelp from "./components/DashboardAgentNeedHelp";
 import MyRequests from "./components/MyRequests";
-import { subscribeCases, submitHelpRequest, updateCasesStatus, updateCaseStatus, updateCaseReason, updateProviderName } from "./api/casesAPI";
+import { subscribeCases, submitHelpRequest, updateCasesStatus, updateCaseStatus, updateCaseReason, updateProviderName, updateTimeSpent } from "./api/casesAPI";
 import { subscribeAgentHelpRequests } from "./api/helpRequestsAPI";
 import { getUserByUsername } from "./api/usersAPI";
 import { HEADER_MAP, normalise } from "./utils/excelParser";
@@ -13,6 +13,7 @@ import CaseStatusDropdown from "./components/CaseStatusDropdown";
 import ReasonCell from "./components/ReasonCell";
 import ReasonModal from "./components/ReasonModal";
 import ProviderNameCell from "./components/ProviderNameCell";
+import TimeLogger from "./components/TimeLogger";
 import useSearch from "./hooks/useSearch";
 import "./DashboardAgent.css";
 import "./components/MyRequests.css";
@@ -86,6 +87,7 @@ function DashboardAgent({ username, onLogout }) {
   // ── Reason Modal ──────────────────────────────────────────────────────────
   const [reasonModalOpen, setReasonModalOpen] = useState(false);
   const [reasonModalCase, setReasonModalCase] = useState(null);
+
 
   // ── My Requests ───────────────────────────────────────────────────────────
   const [myRequests, setMyRequests] = useState([]);
@@ -410,6 +412,26 @@ function DashboardAgent({ username, onLogout }) {
     }
   };
 
+  // Handle time logging - saves to Firestore
+  const handleLogTime = async (caseFirestoreId, seconds) => {
+    try {
+      await updateTimeSpent(caseFirestoreId, seconds);
+      // Real-time update will reflect automatically via subscribeCases
+    } catch (err) {
+      console.error("Failed to log time:", err);
+      alert("Failed to save time. Please try again.");
+    }
+  };
+
+  // Format seconds to HH:MM:SS for display
+  const formatTimeSpent = (totalSeconds) => {
+    if (!totalSeconds) return "00:00:00";
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  };
+
   return (
     <div className="agent-dashboard">
       <header className="tl-topbar">
@@ -510,13 +532,14 @@ function DashboardAgent({ username, onLogout }) {
                           <th>Status</th>
                           <th>Provider Name</th>
                           <th>Reason</th>
+                          <th>Time Spent</th>
                         </tr>
                       </thead>
                       <tbody>
                         {summarySearch.filteredData.length === 0 ? (
                           <tr>
                             <td
-                              colSpan={caseHeaders.length + 3 || 11}
+                              colSpan={caseHeaders.length + 4 || 12}
                               style={{ textAlign: "center", padding: "40px", color: "#999", fontStyle: "italic" }}
                             >
                               {myCases.length === 0 ? "No cases assigned to you yet." : "No matching cases found."}
@@ -565,6 +588,9 @@ function DashboardAgent({ username, onLogout }) {
                                   onClick={() => handleOpenReasonModal(caseItem)}
                                 />
                               </td>
+                              <td style={{ fontFamily: "'Courier New', monospace", fontSize: "13px", fontWeight: "500" }}>
+                                {formatTimeSpent(caseItem.timeSpent || 0)}
+                              </td>
                             </tr>
                           ))
                         )}
@@ -604,6 +630,7 @@ function DashboardAgent({ username, onLogout }) {
                 </section>
               </>
             ) : (
+              <>
               <section className="tl-tile tl-table-tile">
                 <div className="tl-tile-header">
                   <h2 className="tl-tile-title">Case Table</h2>
@@ -639,14 +666,17 @@ function DashboardAgent({ username, onLogout }) {
                         {caseHeaders.map((header) => (
                           <th key={header}>{header}</th>
                         ))}
-                        <th>Status</th>                        <th>Provider Name</th>                        <th>Reason</th>
+                        <th>Status</th>
+                        <th>Provider Name</th>
+                        <th>Reason</th>
+                        <th>Time Spent</th>
                       </tr>
                     </thead>
                     <tbody>
                       {caseTableSearch.filteredData.length === 0 ? (
                         <tr>
                           <td
-                            colSpan={caseHeaders.length + 4 || 12}
+                            colSpan={caseHeaders.length + 5 || 13}
                             style={{ textAlign: "center", padding: "40px", color: "#999", fontStyle: "italic" }}
                           >
                             {myCases.length === 0 ? "No cases assigned to you yet." : "No matching cases found."}
@@ -707,6 +737,9 @@ function DashboardAgent({ username, onLogout }) {
                                   onClick={() => handleOpenReasonModal(caseItem)}
                                 />
                               </td>
+                              <td style={{ fontFamily: "'Courier New', monospace", fontSize: "13px", fontWeight: "500" }}>
+                                {formatTimeSpent(caseItem.timeSpent || 0)}
+                              </td>
                             </tr>
                           );
                         })
@@ -745,6 +778,12 @@ function DashboardAgent({ username, onLogout }) {
                   />
                 </div>
               </section>
+              {/* Time Logger Component */}
+              <TimeLogger 
+                cases={caseTableSearch.filteredData}
+                onLogTime={handleLogTime}
+              />
+              </>
             )}
           </div>
         </main>

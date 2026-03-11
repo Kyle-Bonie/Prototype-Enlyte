@@ -10,6 +10,8 @@ import {
   onSnapshot,
   query,
   orderBy,
+  increment,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { sanitizeCasesFromFirestore } from "../utils/excelParser";
@@ -187,4 +189,17 @@ export const updateCaseReason = async (firestoreId, reason) => {
 export const updateProviderName = async (firestoreId, providerName) => {
   const ref = doc(db, CASES_COLLECTION, firestoreId);
   await setDoc(ref, { providerName: providerName || "" }, { merge: true });
+};
+
+/**
+ * Increment the time spent on a case (in seconds).
+ * Uses Firestore increment for atomic updates.
+ * @param {string} firestoreId - The Firestore document ID
+ * @param {number} seconds - Number of seconds to add
+ */
+export const updateTimeSpent = async (firestoreId, seconds) => {
+  const ref = doc(db, CASES_COLLECTION, firestoreId);
+  await updateDoc(ref, {
+    timeSpent: increment(seconds),
+  });
 };
