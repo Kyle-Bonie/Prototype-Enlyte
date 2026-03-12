@@ -119,10 +119,11 @@ export const clearAllCases = async () => {
 };
 
 // Submit a help request from an agent
-export const submitHelpRequest = async ({ caseId, reason, agentUsername }) => {
+export const submitHelpRequest = async ({ caseId, firestoreId, reason, agentUsername }) => {
   const ref = doc(collection(db, "helpRequests"));
   await setDoc(ref, {
     caseId,
+    caseFirestoreId: firestoreId,
     reason,
     agentUsername,
     status: "pending",

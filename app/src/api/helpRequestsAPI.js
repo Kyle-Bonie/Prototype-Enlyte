@@ -4,6 +4,7 @@ import {
   onSnapshot,
   doc,
   updateDoc,
+  getDoc,
   serverTimestamp,
   query,
   orderBy,
@@ -23,6 +24,7 @@ export const mapDoc = (docSnap) => {
     id: docSnap.id,
     agent: d.agentUsername ?? "Unknown",
     caseNumber: d.caseId ?? "",
+    caseFirestoreId: d.caseFirestoreId ?? "",
     reason: d.reason ?? "",
     status: d.status ?? "pending",
     read: d.read ?? false,
@@ -92,14 +94,55 @@ export const sendReply = async (helpRequestId, replyText, teamLeadUsername) => {
 
 // ─────────────────────────────────────────────
 // Reassign the case linked to a help request
+// Updates both the help request and the actual case document
 // ─────────────────────────────────────────────
 export const reassignHelpRequestCase = async (helpRequestId, newAgent) => {
-  await updateDoc(doc(db, COLLECTION, helpRequestId), {
+  // First, get the help request to find the case Firestore ID
+  const helpRequestRef = doc(db, COLLECTION, helpRequestId);
+  const helpRequestSnap = await getDoc(helpRequestRef);
+  
+  if (!helpRequestSnap.exists()) {
+    throw new Error("Help request not found");
+  }
+  
+  const helpRequestData = helpRequestSnap.data();
+  const caseFirestoreId = helpRequestData.caseFirestoreId;
+  
+  // Update the help request document
+  await updateDoc(helpRequestRef, {
     reassignedTo: newAgent,
     reassignedAt: serverTimestamp(),
     status: "reassigned",
     read: true,
   });
+  
+  // If we have the case Firestore ID, update the case document as well
+  if (caseFirestoreId) {
+    const caseRef = doc(db, "cases", caseFirestoreId);
+    const caseSnap = await getDoc(caseRef);
+    
+    if (caseSnap.exists()) {
+      const caseData = caseSnap.data();
+      
+      // Get the meta document to find the actual agent header key
+      const metaSnap = await getDoc(doc(db, "caseMeta", "schema"));
+      const headers = metaSnap.exists() ? (metaSnap.data().headers ?? []) : [];
+      
+      // Find the agent header key from the Excel file
+      const agentHeaderKey = headers.find((h) => {
+        const normalized = h.toLowerCase().replace(/[^a-z0-9]/g, "");
+        return normalized === "agent";
+      }) || "Agent";
+      
+      const updatedRaw = { ...(caseData._raw || {}), [agentHeaderKey]: newAgent };
+      
+      await updateDoc(caseRef, {
+        agent: newAgent,
+        _raw: updatedRaw,
+        assignedAt: serverTimestamp(),
+      });
+    }
+  }
 };
 
 // ─────────────────────────────────────────────

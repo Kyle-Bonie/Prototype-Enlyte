@@ -101,7 +101,7 @@ function TimeLogger({ cases, onLogTime }) {
           onChange={handleCaseChange}
           disabled={isRunning}
         >
-          <option value="">Select case...</option>
+          <option value="">Choose a case to work on...</option>
           {cases.map((caseItem) => (
             <option key={caseItem.firestoreId} value={caseItem.firestoreId}>
               {caseItem._raw?.["Case Number"] || caseItem.id || "Unknown"}

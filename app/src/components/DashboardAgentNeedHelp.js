@@ -6,10 +6,19 @@ function DashboardAgentNeedHelp({ isOpen, onClose, caseData, caseHeaders = [], p
 
   // Auto-select the pre-selected case whenever the modal opens with one
   useEffect(() => {
-    if (isOpen && preSelectedCaseId) {
-      setSelectedHelpCase(preSelectedCaseId);
+    if (isOpen && preSelectedCaseId && caseData.length > 0) {
+      const idKey = caseHeaders.find((h) => HEADER_MAP[normalise(h)] === "id");
+      const matchingCase = caseData.find((caseItem) => {
+        const caseNumber = idKey ? (caseItem._raw?.[idKey] ?? caseItem.firestoreId) : caseItem.firestoreId;
+        return caseNumber === preSelectedCaseId || caseItem.firestoreId === preSelectedCaseId;
+      });
+      
+      if (matchingCase) {
+        const caseNumber = idKey ? (matchingCase._raw?.[idKey] ?? matchingCase.firestoreId) : matchingCase.firestoreId;
+        setSelectedHelpCase(JSON.stringify({ caseId: caseNumber, firestoreId: matchingCase.firestoreId }));
+      }
     }
-  }, [isOpen, preSelectedCaseId]);
+  }, [isOpen, preSelectedCaseId, caseData, caseHeaders]);
   const [helpReason, setHelpReason] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -22,8 +31,9 @@ function DashboardAgentNeedHelp({ isOpen, onClose, caseData, caseHeaders = [], p
     setError("");
     setLoading(true);
     try {
-      await onSubmit({ caseId: selectedHelpCase, reason: helpReason.trim() });
-      alert(`Help request submitted for case ${selectedHelpCase}`);
+      const caseData = JSON.parse(selectedHelpCase);
+      await onSubmit({ caseId: caseData.caseId, firestoreId: caseData.firestoreId, reason: helpReason.trim() });
+      alert(`Help request submitted for case ${caseData.caseId}`);
       handleClose();
     } catch (err) {
       setError("Failed to submit. Please try again.");
@@ -79,8 +89,9 @@ function DashboardAgentNeedHelp({ isOpen, onClose, caseData, caseHeaders = [], p
                   const caseNumber = idKey ? (caseItem._raw?.[idKey] ?? caseItem.firestoreId) : caseItem.firestoreId;
                   const priorityKey = caseHeaders.find((h) => HEADER_MAP[normalise(h)] === "priority");
                   const priority = priorityKey ? caseItem._raw?.[priorityKey] : null;
+                  const valueData = JSON.stringify({ caseId: caseNumber, firestoreId: caseItem.firestoreId });
                   return (
-                    <option key={caseItem.firestoreId} value={caseNumber}>
+                    <option key={caseItem.firestoreId} value={valueData}>
                       {caseNumber}{priority ? ` - ${priority}` : ""}
                     </option>
                   );

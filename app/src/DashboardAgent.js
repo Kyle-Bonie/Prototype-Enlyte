@@ -876,8 +876,8 @@ function DashboardAgent({ username, onLogout }) {
         caseData={myCases}
         caseHeaders={caseHeaders}
         preSelectedCaseId={helpPreSelectedCaseId}
-        onSubmit={async ({ caseId, reason }) => {
-          await submitHelpRequest({ caseId, reason, agentUsername: username });
+        onSubmit={async ({ caseId, firestoreId, reason }) => {
+          await submitHelpRequest({ caseId, firestoreId, reason, agentUsername: username });
         }}
       />
       {/* ── Reply toast ── */}
