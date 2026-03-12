@@ -200,7 +200,10 @@ export function StatusSuccessRateChart({ data }) {
 
         {/* Status Bars */}
         {statusCounts.map((item, index) => {
-          const barHeight = (item.count / maxCount) * maxHeight;
+          // Ensure minimum bar height of 8px for any count > 0
+          const minBarHeight = 8;
+          const calculatedHeight = (item.count / maxCount) * maxHeight;
+          const barHeight = item.count > 0 ? Math.max(calculatedHeight, minBarHeight) : 0;
           const x = startX + index * (barWidth + barSpacing);
           const y = 220 - barHeight;
           const percentage = ((item.count / total) * 100).toFixed(1);
