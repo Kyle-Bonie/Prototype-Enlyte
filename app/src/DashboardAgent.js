@@ -526,13 +526,13 @@ function DashboardAgent({ username, onLogout }) {
                     <table className="tl-table">
                       <thead>
                         <tr>
-                          {caseHeaders.map((header) => (
-                            <th key={header}>{header}</th>
-                          ))}
                           <th>Status</th>
                           <th>Provider Name</th>
                           <th>Reason</th>
                           <th>Time Spent</th>
+                          {caseHeaders.map((header) => (
+                            <th key={header}>{header}</th>
+                          ))}
                         </tr>
                       </thead>
                       <tbody>
@@ -553,17 +553,6 @@ function DashboardAgent({ username, onLogout }) {
                                 caseItem.status === "Met" ? "tl-row--met" : "tl-row--missed"
                               }`}
                             >
-                              {caseHeaders.map((header) => {
-                                const isStatusCol = HEADER_MAP[normalise(header)] === "status";
-                                return (
-                                  <td
-                                    key={header}
-                                    className={isStatusCol ? `tl-status ${caseItem.status === "Met" ? "tl-status--met" : "tl-status--missed"}` : ""}
-                                  >
-                                    {caseItem._raw?.[header] ?? ""}
-                                  </td>
-                                );
-                              })}
                               <td>
                                 <CaseStatusDropdown
                                   value={caseItem.caseStatus}
@@ -591,6 +580,17 @@ function DashboardAgent({ username, onLogout }) {
                               <td style={{ fontFamily: "'Courier New', monospace", fontSize: "13px", fontWeight: "500" }}>
                                 {formatTimeSpent(caseItem.timeSpent || 0)}
                               </td>
+                              {caseHeaders.map((header) => {
+                                const isStatusCol = HEADER_MAP[normalise(header)] === "status";
+                                return (
+                                  <td
+                                    key={header}
+                                    className={isStatusCol ? `tl-status ${caseItem.status === "Met" ? "tl-status--met" : "tl-status--missed"}` : ""}
+                                  >
+                                    {caseItem._raw?.[header] ?? ""}
+                                  </td>
+                                );
+                              })}
                             </tr>
                           ))
                         )}
@@ -663,13 +663,13 @@ function DashboardAgent({ username, onLogout }) {
                     <thead>
                       <tr>
                         <th aria-label="Select" />
-                        {caseHeaders.map((header) => (
-                          <th key={header}>{header}</th>
-                        ))}
                         <th>Status</th>
                         <th>Provider Name</th>
                         <th>Reason</th>
                         <th>Time Spent</th>
+                        {caseHeaders.map((header) => (
+                          <th key={header}>{header}</th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody>
@@ -702,17 +702,6 @@ function DashboardAgent({ username, onLogout }) {
                                   />
                                 ) : null}
                               </td>
-                              {caseHeaders.map((header) => {
-                                const isStatusCol = HEADER_MAP[normalise(header)] === "status";
-                                return (
-                                  <td
-                                    key={header}
-                                    className={isStatusCol ? `tl-status ${currentStatus === "Met" ? "tl-status--met" : "tl-status--missed"}` : ""}
-                                  >
-                                    {isStatusCol ? currentStatus : (caseItem._raw?.[header] ?? "")}
-                                  </td>
-                                );
-                              })}
                               <td>
                                 <CaseStatusDropdown
                                   value={caseItem.caseStatus}
@@ -740,6 +729,17 @@ function DashboardAgent({ username, onLogout }) {
                               <td style={{ fontFamily: "'Courier New', monospace", fontSize: "13px", fontWeight: "500" }}>
                                 {formatTimeSpent(caseItem.timeSpent || 0)}
                               </td>
+                              {caseHeaders.map((header) => {
+                                const isStatusCol = HEADER_MAP[normalise(header)] === "status";
+                                return (
+                                  <td
+                                    key={header}
+                                    className={isStatusCol ? `tl-status ${currentStatus === "Met" ? "tl-status--met" : "tl-status--missed"}` : ""}
+                                  >
+                                    {isStatusCol ? currentStatus : (caseItem._raw?.[header] ?? "")}
+                                  </td>
+                                );
+                              })}
                             </tr>
                           );
                         })

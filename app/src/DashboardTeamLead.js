@@ -702,13 +702,13 @@ function DashboardTeamLead({ username, onLogout }) {
                       <thead>
                         <tr>
                           <th aria-label="Select" />
-                          {caseHeaders.map((header) => (
-                            <th key={header}>{header}</th>
-                          ))}
                           {caseHeaders.length > 0 && <th>Status</th>}
                           {caseHeaders.length > 0 && <th>Provider Name</th>}
                           {caseHeaders.length > 0 && <th>Reason</th>}
                           {caseHeaders.length > 0 && <th>Time Spent</th>}
+                          {caseHeaders.map((header) => (
+                            <th key={header}>{header}</th>
+                          ))}
                         </tr>
                       </thead>
                       <tbody>
@@ -749,17 +749,6 @@ function DashboardTeamLead({ username, onLogout }) {
                                     />
                                   ) : null}
                                 </td>
-                                {caseHeaders.map((header) => {
-                                  const isStatusCol = HEADER_MAP[normalise(header)] === "status";
-                                  return (
-                                    <td
-                                      key={header}
-                                      className={isStatusCol ? `tl-status ${caseItem.status === "Met" ? "tl-status--met" : "tl-status--missed"}` : ""}
-                                    >
-                                      {caseItem._raw?.[header] ?? ""}
-                                    </td>
-                                  );
-                                })}
                                 {caseHeaders.length > 0 && (
                                   <>
                                     <td>
@@ -790,6 +779,17 @@ function DashboardTeamLead({ username, onLogout }) {
                                     </td>
                                   </>
                                 )}
+                                {caseHeaders.map((header) => {
+                                  const isStatusCol = HEADER_MAP[normalise(header)] === "status";
+                                  return (
+                                    <td
+                                      key={header}
+                                      className={isStatusCol ? `tl-status ${caseItem.status === "Met" ? "tl-status--met" : "tl-status--missed"}` : ""}
+                                    >
+                                      {caseItem._raw?.[header] ?? ""}
+                                    </td>
+                                  );
+                                })}
                               </tr>
                             ),
                           )
@@ -977,13 +977,13 @@ function DashboardTeamLead({ username, onLogout }) {
                     <table className="tl-table">
                       <thead>
                         <tr>
-                          {caseHeaders.map((header) => (
-                            <th key={header}>{header}</th>
-                          ))}
                           {caseHeaders.length > 0 && <th>Status</th>}
                           {caseHeaders.length > 0 && <th>Provider Name</th>}
                           {caseHeaders.length > 0 && <th>Reason</th>}
                           {caseHeaders.length > 0 && <th>Time Spent</th>}
+                          {caseHeaders.map((header) => (
+                            <th key={header}>{header}</th>
+                          ))}
                         </tr>
                       </thead>
                       <tbody>
@@ -1015,17 +1015,6 @@ function DashboardTeamLead({ username, onLogout }) {
                                   : "tl-row--missed"
                               }`}
                             >
-                              {caseHeaders.map((header) => {
-                                const isStatusCol = HEADER_MAP[normalise(header)] === "status";
-                                return (
-                                  <td
-                                    key={header}
-                                    className={isStatusCol ? `tl-status ${caseItem.status === "Met" ? "tl-status--met" : "tl-status--missed"}` : ""}
-                                  >
-                                    {caseItem._raw?.[header] ?? ""}
-                                  </td>
-                                );
-                              })}
                               {caseHeaders.length > 0 && (
                                 <>
                                   <td>
@@ -1056,6 +1045,17 @@ function DashboardTeamLead({ username, onLogout }) {
                                   </td>
                                 </>
                               )}
+                              {caseHeaders.map((header) => {
+                                const isStatusCol = HEADER_MAP[normalise(header)] === "status";
+                                return (
+                                  <td
+                                    key={header}
+                                    className={isStatusCol ? `tl-status ${caseItem.status === "Met" ? "tl-status--met" : "tl-status--missed"}` : ""}
+                                  >
+                                    {caseItem._raw?.[header] ?? ""}
+                                  </td>
+                                );
+                              })}
                             </tr>
                           ))
                         )}
