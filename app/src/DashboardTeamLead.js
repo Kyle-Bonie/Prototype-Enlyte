@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import ApricusLogo from "./assets/ApricusLogo.png";
 import SearchBar from "./components/SearchBar";
 import HelpRequestDetail from "./components/HelpRequestDetail";
-import { PieChart, StatusSuccessRateChart } from "./components/DashboardTeamLeadCharts";
+import { PieChart, StatusSuccessRateChart, DurationPerDayChart, DurationPerAgentChart } from "./components/DashboardTeamLeadCharts";
 import NotificationCarousel from "./components/NotificationCarousel";
 import useSearch from "./hooks/useSearch";
 import {
@@ -18,6 +18,7 @@ import {
   sendReply,
   reassignHelpRequestCase,
 } from "./api/helpRequestsAPI";
+import { subscribeLastNDaysDurations, syncAgentDurationsFromCases } from "./api/durationsAPI";
 import { parseExcelFile, deriveAgentSummary, HEADER_MAP, normalise } from "./utils/excelParser";
 import ClearDataButton from "./components/ClearDataButton";
 import RowsPerPageSelector from "./components/RowsPerPageSelector";
@@ -80,6 +81,8 @@ function DashboardTeamLead({ username, onLogout }) {
   const [caseData, setCaseData] = useState([]);
   // Column headers derived from the uploaded Excel file
   const [caseHeaders, setCaseHeaders] = useState([]);
+  // Duration data for the last 7 days from durations collection
+  const [durationData, setDurationData] = useState([]);
 
   // Reason Modal state
   const [reasonModalOpen, setReasonModalOpen] = useState(false);
@@ -88,6 +91,14 @@ function DashboardTeamLead({ username, onLogout }) {
   // Subscribe to live help requests from Firestore on mount
   useEffect(() => {
     const unsub = subscribeHelpRequests((requests) => setHelpRequests(requests));
+    return () => unsub();
+  }, []);
+
+  // Subscribe to duration data for the last 7 days
+  useEffect(() => {
+    const unsub = subscribeLastNDaysDurations(7, (durations) => {
+      setDurationData(durations);
+    });
     return () => unsub();
   }, []);
 
@@ -119,6 +130,12 @@ function DashboardTeamLead({ username, onLogout }) {
         setCaseData(cases);
         setCaseHistoryData(cases);
         setCaseHeaders(headers);
+        
+        // Sync existing timeSpent data to agentDurations collection
+        // This ensures the Duration Per Agent chart has data
+        syncAgentDurationsFromCases(cases).catch(err => {
+          console.error("Failed to sync agent durations:", err);
+        });
       }
       setCasesLoading(false);
     });
@@ -551,6 +568,27 @@ function DashboardTeamLead({ username, onLogout }) {
                       </h2>
                     </div>
                     <PieChart data={agentSummaryData} />
+                  </section>
+                </div>
+                {/* Third row: Duration charts side by side */}
+                <div className="tl-tiles">
+                  {/* Duration Per Day Chart */}
+                  <section className="tl-tile">
+                    <div className="tl-tile-header">
+                      <h2 className="tl-tile-title">
+                        Duration Per Day
+                      </h2>
+                    </div>
+                    <DurationPerDayChart durationData={durationData} />
+                  </section>
+                  {/* Duration Per Agent Chart */}
+                  <section className="tl-tile">
+                    <div className="tl-tile-header">
+                      <h2 className="tl-tile-title">
+                        Duration Per Agent
+                      </h2>
+                    </div>
+                    <DurationPerAgentChart users={users} />
                   </section>
                 </div>
                 {/* Agent summary table tile */}

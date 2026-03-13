@@ -15,6 +15,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { sanitizeCasesFromFirestore } from "../utils/excelParser";
+import { updateTodayDuration, recordAgentDuration } from "./durationsAPI";
 
 const CASES_COLLECTION = "cases";
 const META_COLLECTION = "caseMeta";
@@ -196,12 +197,28 @@ export const updateProviderName = async (firestoreId, providerName) => {
 /**
  * Increment the time spent on a case (in seconds).
  * Uses Firestore increment for atomic updates.
+ * Also updates the durations collection for today and agent-specific duration.
  * @param {string} firestoreId - The Firestore document ID
  * @param {number} seconds - Number of seconds to add
  */
 export const updateTimeSpent = async (firestoreId, seconds) => {
   const ref = doc(db, CASES_COLLECTION, firestoreId);
+  
+  // First, get the case to find the agent
+  const caseSnap = await getDoc(ref);
+  const caseData = caseSnap.data();
+  
   await updateDoc(ref, {
     timeSpent: increment(seconds),
   });
+  
+  // Also update today's duration in the durations collection
+  await updateTodayDuration(seconds);
+  
+  // Update agent-specific duration if agent is assigned
+  if (caseData && caseData.agent) {
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    await recordAgentDuration(caseData.agent, todayStr, seconds);
+  }
 };
